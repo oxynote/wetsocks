@@ -1,0 +1,30 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+
+# Windows binary metadata
+*.syso
+
+# Test binary, built with `go test -c`
+*.test
+
+# IDE generated
+.idea/
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Development exec files
+.devenv/
+*.db
+*.log
+
+# Environment files/credentials
+/.env*
+
+# Go workspace file
+go.work*

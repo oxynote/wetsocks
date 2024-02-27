@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# $1 must be min coverage
+
+if ! type gocov &> /dev/null; then
+	go install github.com/axw/gocov/gocov@master
+fi
+
+if [[ -z "$1" ]]; then
+	echo "Minimum coverage not specified"
+	exit 1
+fi
+
+cov=$(gocov test ./... -race -shuffle on -failfast -timeout 3m | gocov report | sed -nE 's/^Total Coverage: (.+)%.*$/\1/p')
+if [[ -z "${cov}" || "${cov}" == "NaN" ]]; then
+	echo "Invalid coverage data"
+	exit 1
+fi
+
+if awk "BEGIN {exit !("${cov}" < $1)}"; then
+	echo "Coverage: ${cov}%, minimum allowed: $1%"
+	exit 1
+fi
+
+echo "Coverage: ${cov}%"
