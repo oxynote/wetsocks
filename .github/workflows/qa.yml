@@ -11,6 +11,10 @@ defaults:
   run:
     shell: bash
 
+env:
+  GOPRIVATE: github.com/jellydator
+  DEPS_GITHUB_TOKEN: ${{ secrets.DEPS_GITHUB_TOKEN }}
+
 jobs:
   lint:
     name: Linting
@@ -23,6 +27,11 @@ jobs:
 
       - name: Check out the code
         uses: actions/checkout@v4
+
+      - name: Installing dependencies
+        run: |
+            git config --global url.https://$DEPS_GITHUB_TOKEN@github.com/.insteadOf https://github.com/
+            go mod download
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
@@ -40,6 +49,11 @@ jobs:
 
       - name: Check out the code
         uses: actions/checkout@v4
+
+      - name: Installing dependencies
+        run: |
+            git config --global url.https://$DEPS_GITHUB_TOKEN@github.com/.insteadOf https://github.com/
+            go mod download
 
       - name: Run unit tests
         run: make test
