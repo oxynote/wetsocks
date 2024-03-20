@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jellydator/flapjack/pkg/ws/wsserver"
+	"github.com/jellydator/wetsocks/wsserver"
 )
 
 // Ensure, that Pool does implement wsserver.Pool.

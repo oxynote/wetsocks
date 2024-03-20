@@ -23,7 +23,7 @@ const _defaultReadLimit = 1 << 15 // approx 32kb
 // Pool is an interface that is used to handle server-side websocket
 // connections.
 //
-//go:generate ../../../scripts/codegen/mock Pool
+//go:generate ../scripts/codegen/mock Pool
 type Pool interface {
 	http.Handler
 	ConnCloser

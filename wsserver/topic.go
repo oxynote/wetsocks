@@ -180,7 +180,7 @@ func (r *Router) removeConn(c *conn) {
 // Topic is an interface that is used to control the subscription and event
 // flow.
 //
-//go:generate ../../../scripts/codegen/mock Topic
+//go:generate ../scripts/codegen/mock Topic
 type Topic interface {
 	// Publish should send a new event with the provided payload
 	// to all selected connections.
