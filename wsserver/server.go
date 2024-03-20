@@ -158,7 +158,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	c, err := websocket.Accept(w, r, &s.opts.AcceptOptions)
 	if err != nil {
-		err = errutil.Wrap(err, http.StatusInternalServerError, "")
+		err = errutil.Wrap(err, http.StatusInternalServerError, errutil.InternalCodeGeneral, "")
 		httpserver.RespondError(s.log, w, err)
 
 		return
