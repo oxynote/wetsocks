@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/jellydator/purse v0.0.0-20240320114711-c4d4c033e29d
+	github.com/jellydator/purse v0.0.0-20240320173547-ed41d53c237e
 	github.com/jellydator/xync v0.0.0-20220218123248-1cd4bc8e08ba
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.32.0

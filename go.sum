@@ -31,6 +31,8 @@ github.com/jarcoal/httpmock v1.3.1 h1:iUx3whfZWVf3jT01hQTO/Eo5sAYtB2/rqaUuOtpInw
 github.com/jarcoal/httpmock v1.3.1/go.mod h1:3yb8rc4BI7TCBhFY8ng0gjuLKJNquuDNiPaZjnENuYg=
 github.com/jellydator/purse v0.0.0-20240320114711-c4d4c033e29d h1:QrfijNrx5je8Ij02VdxRTnD4jDgA+py2n19gxv0brU0=
 github.com/jellydator/purse v0.0.0-20240320114711-c4d4c033e29d/go.mod h1:tc3/CcrAh/OfyEReUGL+Lapwvyrt1omeKOtka36Khxw=
+github.com/jellydator/purse v0.0.0-20240320173547-ed41d53c237e h1:A0I3JelqzdgdqUtf/i8bsiXNadNvnyxgtEp2SVpqgyw=
+github.com/jellydator/purse v0.0.0-20240320173547-ed41d53c237e/go.mod h1:tc3/CcrAh/OfyEReUGL+Lapwvyrt1omeKOtka36Khxw=
 github.com/jellydator/validation v1.1.0 h1:TBkx56y6dd0By2AhtStRdTIhDjtcuoSE9w6G6z7wQ4o=
 github.com/jellydator/validation v1.1.0/go.mod h1:AaCjfkQ4Ykdcb+YCwqCtaI3wDsf2UAGhJ06lJs0VgOw=
 github.com/jellydator/xync v0.0.0-20220218123248-1cd4bc8e08ba h1:6yCjgF92RbygKSQsqTleINHbSNNdDykdrB1LrxJwZZ8=
