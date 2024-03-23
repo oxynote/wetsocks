@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func Test_NewReconnClient(t *testing.T) {
+func Test_NewClient(t *testing.T) {
 	var respErr bool
 
 	hs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -50,10 +50,10 @@ func Test_NewReconnClient(t *testing.T) {
 
 	respErr = true
 	keeper := &SubKeeperMock{}
-	s, err := NewReconnClient(
+	s, err := NewClient(
 		context.Background(),
 		zerolog.Nop(),
-		ReconnClientOptions{
+		ClientOptions{
 			Options: wsclient.Options{
 				URL: hs.URL,
 			},
@@ -72,10 +72,10 @@ func Test_NewReconnClient(t *testing.T) {
 	baseCtxCalled = false
 	respErr = false
 	keeper = &SubKeeperMock{}
-	s, err = NewReconnClient(
+	s, err = NewClient(
 		context.Background(),
 		zerolog.Nop(),
-		ReconnClientOptions{
+		ClientOptions{
 			Options: wsclient.Options{
 				URL: hs.URL,
 			},
@@ -121,10 +121,10 @@ func Test_NewReconnClient(t *testing.T) {
 	// success without defaults
 	baseCtxCalled = false
 	keeper = &SubKeeperMock{}
-	s, err = NewReconnClient(
+	s, err = NewClient(
 		context.Background(),
 		zerolog.Nop(),
-		ReconnClientOptions{
+		ClientOptions{
 			Options: wsclient.Options{
 				URL: hs.URL,
 			},
@@ -172,7 +172,7 @@ func Test_NewReconnClient(t *testing.T) {
 	s.proc.Stop()
 }
 
-func Test_ReconnClient_Close(t *testing.T) {
+func Test_Client_Close(t *testing.T) {
 	hs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocket.Accept(w, r, nil)
 		if err != nil {
@@ -183,7 +183,7 @@ func Test_ReconnClient_Close(t *testing.T) {
 	}))
 	t.Cleanup(hs.Close)
 
-	s := ReconnClient{
+	s := Client{
 		ws: wsclient.New(zerolog.Nop(), wsclient.Options{
 			URL: hs.URL,
 		}),
@@ -196,7 +196,7 @@ func Test_ReconnClient_Close(t *testing.T) {
 	s.Close()
 }
 
-func Test_ReconnClient_OnRead(t *testing.T) {
+func Test_Client_OnRead(t *testing.T) {
 	hs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocket.Accept(w, r, nil)
 		if err != nil {
@@ -213,7 +213,7 @@ func Test_ReconnClient_OnRead(t *testing.T) {
 	}))
 	t.Cleanup(hs.Close)
 
-	s := ReconnClient{
+	s := Client{
 		ws: wsclient.New(zerolog.Nop(), wsclient.Options{
 			URL: hs.URL,
 		}),
@@ -250,7 +250,7 @@ func Test_ReconnClient_OnRead(t *testing.T) {
 	s.ws.Close()
 }
 
-func Test_ReconnClient_process(t *testing.T) {
+func Test_Client_process(t *testing.T) {
 	var respErr bool
 
 	hs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -285,8 +285,8 @@ func Test_ReconnClient_process(t *testing.T) {
 	out, b := testutil.NewBuffer()
 	respErr = true
 	keeper := &SubKeeperMock{}
-	s := ReconnClient{
-		opts: ReconnClientOptions{
+	s := Client{
+		opts: ClientOptions{
 			BaseContext: func() context.Context {
 				baseCtxCalled = true
 				return context.Background()

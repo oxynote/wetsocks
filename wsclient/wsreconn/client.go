@@ -14,10 +14,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// ReconnClient wraps a WebSocket client and adds automatic
+// Client wraps a WebSocket client and adds automatic
 // reconnection as well as resubscription logic.
-type ReconnClient struct {
-	opts   ReconnClientOptions
+type Client struct {
+	opts   ClientOptions
 	log    zerolog.Logger
 	keeper SubKeeper
 	ws     *wsclient.Client
@@ -26,8 +26,8 @@ type ReconnClient struct {
 	proc   *timeutil.PeriodicExec
 }
 
-// ReconnClientOptions contains a WebSocket client's options.
-type ReconnClientOptions struct {
+// ClientOptions contains a WebSocket client's options.
+type ClientOptions struct {
 	wsclient.Options
 
 	// BaseContext returns a new context for each (re)connection and
@@ -43,17 +43,17 @@ type ReconnClientOptions struct {
 	CheckAfter time.Duration
 }
 
-// NewReconnClient creates a fresh instance of the ReconnClient.
+// NewClient creates a fresh instance of the Client.
 // It initializes the client and opens a WebSocket connection.
 // The context parameter is used only when openning the connection for
 // the first time. Note that it is also combined with the base context
 // produced by the function in the options.
-func NewReconnClient(
+func NewClient(
 	ctx context.Context,
 	logger zerolog.Logger,
-	opts ReconnClientOptions,
+	opts ClientOptions,
 	keeper SubKeeper,
-) (*ReconnClient, error) {
+) (*Client, error) {
 	if opts.BaseContext == nil {
 		opts.BaseContext = context.Background
 	}
@@ -62,7 +62,7 @@ func NewReconnClient(
 		opts.CheckAfter = time.Second * 30
 	}
 
-	s := &ReconnClient{
+	s := &Client{
 		opts:   opts,
 		log:    logger,
 		keeper: keeper,
@@ -87,20 +87,20 @@ func NewReconnClient(
 }
 
 // Close stops all the client-related processes.
-func (s *ReconnClient) Close() {
+func (s *Client) Close() {
 	s.proc.Stop()
 	s.ws.Close()
 }
 
 // OnRead sets the provided function to be executed on a new incoming
 // JSON event. JSON data is not to be modified.
-func (s *ReconnClient) OnRead(fn func(context.Context, json.RawMessage)) {
+func (s *Client) OnRead(fn func(context.Context, json.RawMessage)) {
 	s.ws.OnRead(fn)
 }
 
 // process checks if the client's connection is not closed or any
 // of the subscriptions unsent.
-func (s *ReconnClient) process(ctx context.Context) {
+func (s *Client) process(ctx context.Context) {
 	if !s.procMu.TryLock() {
 		// we need to ensure that only one process is running
 		// at a time, even if enough time passes for another
