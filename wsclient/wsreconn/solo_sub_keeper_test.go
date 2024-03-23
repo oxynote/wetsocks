@@ -203,6 +203,20 @@ func Test_SoloSubKeeper_Subscribe(t *testing.T) {
 	assert.Equal(t, 3, calls)
 }
 
+func Test_SoloSubKeeper_UnsubscribeLocal(t *testing.T) {
+	s := SoloSubKeeper{
+		subs: map[string]*soloSub{
+			"test1": {
+				subbed:    true,
+				confirmed: true,
+			},
+		},
+	}
+
+	s.UnsubscribeLocal("test1")
+	assert.NotContains(t, s.subs, "test1")
+}
+
 func Test_SoloSubKeeper_Unsubscribe(t *testing.T) {
 	var (
 		mu    sync.Mutex

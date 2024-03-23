@@ -118,6 +118,17 @@ func (s *SoloSubKeeper) Subscribe(topic string) {
 	s.execFns()
 }
 
+// UnsubscribeLocal works the same way as Unsubscribe but without triggering
+// an unsubscription event. In other words, it just deletes the subscription
+// locally. It's useful in situation when the server sends a subscription
+// drop event after successful subscription.
+func (s *SoloSubKeeper) UnsubscribeLocal(topic string) {
+	s.subsMu.Lock()
+	defer s.subsMu.Unlock()
+
+	delete(s.subs, topic)
+}
+
 // Unsubscribe unsubscribes from the provided topic.
 func (s *SoloSubKeeper) Unsubscribe(topic string) {
 	s.subsMu.Lock()
