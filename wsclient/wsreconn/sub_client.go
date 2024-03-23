@@ -1,0 +1,211 @@
+// Package wsreconn provides wsclient reconnection and resubscription logic.
+package wsreconn
+
+import (
+	"context"
+	"encoding/json"
+	"sync"
+	"time"
+
+	"github.com/jellydator/purse/util/ctxutil"
+	"github.com/jellydator/purse/util/logutil"
+	"github.com/jellydator/purse/util/timeutil"
+	"github.com/jellydator/wetsocks/wsclient"
+	"github.com/rs/zerolog"
+)
+
+// ReconnClient wraps a WebSocket client and adds automatic
+// reconnection as well as resubscription logic.
+type ReconnClient struct {
+	opts   ReconnClientOptions
+	log    zerolog.Logger
+	keeper SubKeeper
+	ws     *wsclient.Client
+
+	procMu sync.Mutex
+	proc   *timeutil.PeriodicExec
+}
+
+// ReconnClientOptions contains a WebSocket client's options.
+type ReconnClientOptions struct {
+	wsclient.Options
+
+	// BaseContext returns a new context for each (re)connection and
+	// (re)subscription attempt.
+	// The default is context.Background().
+	BaseContext func() context.Context
+
+	// CheckAfter specifies how much time should pass between
+	// repeated connection and subscription checks.
+	// Note that subscriptions are checked each time data managed
+	// by SubKeeper changes.
+	// The default is 30 seconds.
+	CheckAfter time.Duration
+}
+
+// NewReconnClient creates a fresh instance of the ReconnClient.
+// It initializes the client and opens a WebSocket connection.
+// The context parameter is used only when openning the connection for
+// the first time. Note that it is also combined with the base context
+// produced by the function in the options.
+func NewReconnClient(
+	ctx context.Context,
+	logger zerolog.Logger,
+	opts ReconnClientOptions,
+	keeper SubKeeper,
+) (*ReconnClient, error) {
+	if opts.BaseContext == nil {
+		opts.BaseContext = context.Background
+	}
+
+	if opts.CheckAfter <= 0 {
+		opts.CheckAfter = time.Second * 30
+	}
+
+	s := &ReconnClient{
+		opts:   opts,
+		log:    logger,
+		keeper: keeper,
+		ws:     wsclient.New(logger, opts.Options),
+	}
+	s.proc = timeutil.NewPeriodicExec(opts.CheckAfter, time.Second, s.process)
+
+	multiCtx, multiCancel := ctxutil.MultiContext(ctx, opts.BaseContext())
+	defer multiCancel()
+
+	if err := s.ws.Open(multiCtx); err != nil {
+		return nil, err
+	}
+
+	go s.proc.Start()
+
+	s.keeper.OnChange(func(_ context.Context) {
+		s.proc.Trigger()
+	})
+
+	return s, nil
+}
+
+// Close stops all the client-related processes.
+func (s *ReconnClient) Close() {
+	s.proc.Stop()
+	s.ws.Close()
+}
+
+// OnRead sets the provided function to be executed on a new incoming
+// JSON event. JSON data is not to be modified.
+func (s *ReconnClient) OnRead(fn func(context.Context, json.RawMessage)) {
+	s.ws.OnRead(fn)
+}
+
+// process checks if the client's connection is not closed or any
+// of the subscriptions unsent.
+func (s *ReconnClient) process(ctx context.Context) {
+	if !s.procMu.TryLock() {
+		// we need to ensure that only one process is running
+		// at a time, even if enough time passes for another
+		// one to start
+		return
+	}
+
+	defer s.procMu.Unlock()
+
+	ctx, cancel := ctxutil.MultiContext(ctx, s.opts.BaseContext())
+	defer cancel()
+
+	if !s.ws.IsOpen() {
+		s.keeper.ResetAll()
+
+		if err := s.ws.Open(ctx); err != nil {
+			l := logutil.NoContextLogger(s.log, err)
+			l.Warn().
+				Err(err).
+				Msg("cannot reopen the connection")
+
+			return
+		}
+	}
+
+	pp, cooldown := s.keeper.Payloads()
+	for i := range pp {
+		p, confirm := pp[i].Payload()
+		if p == nil {
+			continue
+		}
+
+		if confirm != nil {
+			res, err := s.ws.Send(ctx, p)
+			if err != nil {
+				l := logutil.NoContextLogger(s.log, err)
+				l.Warn().
+					Err(err).
+					Msg("cannot send a payload")
+			} else {
+				confirm(res)
+			}
+		} else {
+			err := s.ws.Write(ctx, p)
+			if err != nil {
+				l := logutil.NoContextLogger(s.log, err)
+				l.Warn().
+					Err(err).
+					Msg("cannot write a payload")
+			}
+		}
+
+		if cooldown <= 0 || i == len(pp)-1 {
+			continue
+		}
+
+		t := time.NewTimer(cooldown)
+
+		select {
+		case <-ctx.Done():
+			if !t.Stop() {
+				select {
+				case <-t.C:
+					// NOCOV: since the timer is created
+					// and stopped inside this function,
+					// there is no way to stop it from
+					// the outside to trigger this case.
+				default:
+				}
+			}
+
+			return
+		case <-t.C:
+		}
+	}
+}
+
+// SubKeeper is an interface that handles subscriptions and unsubscriptions.
+//
+//go:generate ../../scripts/codegen/mock -t internal SubKeeper
+type SubKeeper interface {
+	// Payloads should return a slice of payloads that should
+	// be sent through a WebSocket connection and a duration
+	// value indicating how much time has to pass after each
+	// write before a new one is sent.
+	Payloads() ([]SubPayloader, time.Duration)
+
+	// ResetAll should reset every subscription to an unconfirmed state.
+	// It should not trigger any change functions.
+	ResetAll()
+
+	// OnChange should set the provided function to be executed
+	// when subscription-related data changes.
+	OnChange(fn func(context.Context))
+}
+
+// SubPayloader is an interface that handles a single payload's state.
+//
+//go:generate ../../scripts/codegen/mock -t internal SubPayloader
+type SubPayloader interface {
+	// Payload should return a payload that should be sent through
+	// a WebSocket connection and a function that should be used
+	// when confirming a response.
+	// If the first return value is nil, the payload is not sent (i.e.,
+	// it is skipped).
+	// If the function is nil, the response should not expected.
+	Payload() (any, func(json.RawMessage))
+}

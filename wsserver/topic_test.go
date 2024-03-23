@@ -1357,14 +1357,14 @@ func Test_topic_Drop(t *testing.T) {
 	)
 
 	tpc.events.unsub.fns = []func(context.Context){
-		func(mctx context.Context) {
+		func(_ context.Context) {
 			unsubMu.Lock()
 			defer unsubMu.Unlock()
 
 			unsubCalls++
 			unsubWg.Done()
 		},
-		func(mctx context.Context) {
+		func(_ context.Context) {
 			unsubMu.Lock()
 			defer unsubMu.Unlock()
 
