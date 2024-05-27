@@ -20,8 +20,11 @@ var _ wsserver.Topic = &Topic{}
 //
 //		// make and configure a mocked wsserver.Topic
 //		mockedTopic := &Topic{
-//			DropFunc: func(ctx context.Context, reason string, filter func(context.Context, string) bool)  {
-//				panic("mock out the Drop method")
+//			DropManyFunc: func(ctx context.Context, reason string, filter func(context.Context, string) bool)  {
+//				panic("mock out the DropMany method")
+//			},
+//			DropOneFunc: func(ctx context.Context, reason string)  {
+//				panic("mock out the DropOne method")
 //			},
 //			OnFirstSubFunc: func(fn func(context.Context))  {
 //				panic("mock out the OnFirstSub method")
@@ -45,8 +48,11 @@ var _ wsserver.Topic = &Topic{}
 //
 //	}
 type Topic struct {
-	// DropFunc mocks the Drop method.
-	DropFunc func(ctx context.Context, reason string, filter func(context.Context, string) bool)
+	// DropManyFunc mocks the DropMany method.
+	DropManyFunc func(ctx context.Context, reason string, filter func(context.Context, string) bool)
+
+	// DropOneFunc mocks the DropOne method.
+	DropOneFunc func(ctx context.Context, reason string)
 
 	// OnFirstSubFunc mocks the OnFirstSub method.
 	OnFirstSubFunc func(fn func(context.Context))
@@ -65,14 +71,21 @@ type Topic struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// Drop holds details about calls to the Drop method.
-		Drop []struct {
+		// DropMany holds details about calls to the DropMany method.
+		DropMany []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Reason is the reason argument value.
 			Reason string
 			// Filter is the filter argument value.
 			Filter func(context.Context, string) bool
+		}
+		// DropOne holds details about calls to the DropOne method.
+		DropOne []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Reason is the reason argument value.
+			Reason string
 		}
 		// OnFirstSub holds details about calls to the OnFirstSub method.
 		OnFirstSub []struct {
@@ -104,7 +117,8 @@ type Topic struct {
 			Filter func(context.Context, string) bool
 		}
 	}
-	lockDrop        sync.RWMutex
+	lockDropMany    sync.RWMutex
+	lockDropOne     sync.RWMutex
 	lockOnFirstSub  sync.RWMutex
 	lockOnLastUnsub sync.RWMutex
 	lockOnSub       sync.RWMutex
@@ -112,8 +126,8 @@ type Topic struct {
 	lockPublish     sync.RWMutex
 }
 
-// Drop calls DropFunc.
-func (mock *Topic) Drop(ctx context.Context, reason string, filter func(context.Context, string) bool) {
+// DropMany calls DropManyFunc.
+func (mock *Topic) DropMany(ctx context.Context, reason string, filter func(context.Context, string) bool) {
 	callInfo := struct {
 		Ctx    context.Context
 		Reason string
@@ -123,20 +137,20 @@ func (mock *Topic) Drop(ctx context.Context, reason string, filter func(context.
 		Reason: reason,
 		Filter: filter,
 	}
-	mock.lockDrop.Lock()
-	mock.calls.Drop = append(mock.calls.Drop, callInfo)
-	mock.lockDrop.Unlock()
-	if mock.DropFunc == nil {
+	mock.lockDropMany.Lock()
+	mock.calls.DropMany = append(mock.calls.DropMany, callInfo)
+	mock.lockDropMany.Unlock()
+	if mock.DropManyFunc == nil {
 		return
 	}
-	mock.DropFunc(ctx, reason, filter)
+	mock.DropManyFunc(ctx, reason, filter)
 }
 
-// DropCalls gets all the calls that were made to Drop.
+// DropManyCalls gets all the calls that were made to DropMany.
 // Check the length with:
 //
-//	len(mockedTopic.DropCalls())
-func (mock *Topic) DropCalls() []struct {
+//	len(mockedTopic.DropManyCalls())
+func (mock *Topic) DropManyCalls() []struct {
 	Ctx    context.Context
 	Reason string
 	Filter func(context.Context, string) bool
@@ -146,9 +160,45 @@ func (mock *Topic) DropCalls() []struct {
 		Reason string
 		Filter func(context.Context, string) bool
 	}
-	mock.lockDrop.RLock()
-	calls = mock.calls.Drop
-	mock.lockDrop.RUnlock()
+	mock.lockDropMany.RLock()
+	calls = mock.calls.DropMany
+	mock.lockDropMany.RUnlock()
+	return calls
+}
+
+// DropOne calls DropOneFunc.
+func (mock *Topic) DropOne(ctx context.Context, reason string) {
+	callInfo := struct {
+		Ctx    context.Context
+		Reason string
+	}{
+		Ctx:    ctx,
+		Reason: reason,
+	}
+	mock.lockDropOne.Lock()
+	mock.calls.DropOne = append(mock.calls.DropOne, callInfo)
+	mock.lockDropOne.Unlock()
+	if mock.DropOneFunc == nil {
+		return
+	}
+	mock.DropOneFunc(ctx, reason)
+}
+
+// DropOneCalls gets all the calls that were made to DropOne.
+// Check the length with:
+//
+//	len(mockedTopic.DropOneCalls())
+func (mock *Topic) DropOneCalls() []struct {
+	Ctx    context.Context
+	Reason string
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Reason string
+	}
+	mock.lockDropOne.RLock()
+	calls = mock.calls.DropOne
+	mock.lockDropOne.RUnlock()
 	return calls
 }
 

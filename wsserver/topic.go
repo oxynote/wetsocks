@@ -193,19 +193,24 @@ type Topic interface {
 		filter func(context.Context, string) bool,
 	)
 
-	// Drop should remove the selected connections from the subscribers
-	// list.
+	// DropMany should remove the selected connections from the
+	// subscribers list.
 	// The reason string should be optional.
 	// The optional func parameter should be called with each
 	// connection's context and built topic to determine whether that
 	// connection should be selected.
 	// NOTE: if the func parameter is nil or not restrictive enough,
 	// all subscribers may be removed.
-	Drop(
+	DropMany(
 		ctx context.Context,
 		reason string,
 		filter func(context.Context, string) bool,
 	)
+
+	// DropOne should remove the connection that is associated with
+	// the provided context from the subscribers list.
+	// The reason string should be optional.
+	DropOne(ctx context.Context, reason string)
 
 	// OnSub should set the provided function to be executed
 	// when a new subscription is added to the topic's subscribers list.
@@ -475,7 +480,7 @@ func (t *topic) Publish(
 	t.publish(pubCtx, ptrn, t.subs, data, middlewares...)
 }
 
-// Drop removes the selected connections from the subscribers
+// DropMany removes the selected connections from the subscribers
 // list.
 // The reason string is optional.
 // The optional func parameter is called with each
@@ -483,7 +488,7 @@ func (t *topic) Publish(
 // should be selected.
 // NOTE: if the func parameter is nil or not restrictive enough,
 // all subscribers may be removed.
-func (t *topic) Drop(
+func (t *topic) DropMany(
 	dropCtx context.Context,
 	reason string,
 	filter func(context.Context, string) bool,
@@ -540,6 +545,20 @@ func (t *topic) Drop(
 	}
 
 	t.publish(dropCtx, ptrn, droppedSubs, data)
+}
+
+// DropOne removes the connection that is associated with
+// the provided context from the subscribers list.
+// The reason string should be optional.
+func (t *topic) DropOne(ctx context.Context, reason string) {
+	id := ctx.Value(_wsCtxID)
+	if id == nil {
+		return
+	}
+
+	t.DropMany(ctx, reason, func(ctx context.Context, _ string) bool {
+		return id == ctx.Value(_wsCtxID)
+	})
 }
 
 // OnSub sets the provided function to be executed

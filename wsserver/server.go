@@ -13,12 +13,15 @@ import (
 	"github.com/jellydator/purse/util/logutil"
 	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/rs/xid"
 	"github.com/rs/zerolog"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
 
 const _defaultReadLimit = 1 << 15 // approx 32kb
+
+const _wsCtxID ctxKey = "conn-id"
 
 // Pool is an interface that is used to handle server-side websocket
 // connections.
@@ -155,6 +158,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpserver.RespondError(s.log, w, err)
 		return
 	}
+
+	ctx = context.WithValue(ctx, _wsCtxID, xid.New().String())
 
 	c, err := websocket.Accept(w, r, &s.opts.AcceptOptions)
 	if err != nil {
@@ -339,3 +344,6 @@ func (c *conn) publish(ctx context.Context, data func() ([]byte, error)) {
 	case c.writeCh <- bb:
 	}
 }
+
+// ctxKey is used to store values in a context.
+type ctxKey string

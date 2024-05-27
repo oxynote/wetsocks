@@ -339,6 +339,12 @@ func Test_Server_ServeHTTP(t *testing.T) {
 		return len(s.conns) == 1
 	}, time.Second, time.Millisecond*250)
 
+	s.mu.RLock()
+	for conn := range s.conns {
+		assert.NotZero(t, conn.ctx.Value(_wsCtxID))
+	}
+	s.mu.RUnlock()
+
 	require.NoError(t, wsConn.Close(websocket.StatusNormalClosure, ""))
 	s.supv.Wait()
 	assert.Eventually(t, func() bool {

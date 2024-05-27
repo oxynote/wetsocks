@@ -9,6 +9,7 @@ import (
 
 	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/rs/xid"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,8 +20,6 @@ var (
 	_connCtxValue        = "123"
 	_connCtx             = context.WithValue(context.Background(), _connCtxKey, _connCtxValue)
 )
-
-type ctxKey string
 
 func Test_BinderFunc_Bind(t *testing.T) {
 	var called bool
@@ -1272,7 +1271,7 @@ func Test_topic_Publish(t *testing.T) {
 	assert.Equal(t, 22, middlewareCalls)
 }
 
-func Test_topic_Drop(t *testing.T) {
+func Test_topic_DropMany(t *testing.T) {
 	dropCtx := context.WithValue(context.Background(), contextKey(-100), "-100")
 	writeCh := make(chan []byte)
 	c1 := prepConn(writeCh)
@@ -1413,7 +1412,7 @@ func Test_topic_Drop(t *testing.T) {
 		closeCh <- struct{}{}
 	}()
 
-	tpc.Drop(dropCtx, "error", func(mctx context.Context, _ string) bool {
+	tpc.DropMany(dropCtx, "error", func(mctx context.Context, _ string) bool {
 		assert.Nil(t, mctx.Value(contextKey(-100)))
 		assert.Equal(t, _connCtxValue, mctx.Value(_connCtxKey))
 
@@ -1472,7 +1471,7 @@ func Test_topic_Drop(t *testing.T) {
 		closeCh <- struct{}{}
 	}()
 
-	tpc.Drop(dropCtx, "", nil)
+	tpc.DropMany(dropCtx, "", nil)
 	<-closeCh
 
 	unsubWg.Wait()
@@ -1498,11 +1497,113 @@ func Test_topic_Drop(t *testing.T) {
 		closeCh <- struct{}{}
 	}()
 
-	tpc.Drop(dropCtx, "", nil)
+	tpc.DropMany(dropCtx, "", nil)
 	<-closeCh
 	require.Empty(t, tpc.subs)
 	assert.Zero(t, unsubCalls)
 	assert.Zero(t, lastUnsubCalls)
+}
+
+func Test_topic_DropOne(t *testing.T) {
+	writeCh := make(chan []byte, 3)
+	c1 := prepConn(writeCh)
+	c2 := prepConn(writeCh)
+	c3 := prepConn(writeCh)
+	tpc := topic{
+		pattern: pattern{
+			topic: wsutil.Topic{
+				Operation: "update",
+				Path: []string{
+					"exchange",
+					"live",
+					"candles",
+					"{symbol}",
+					"{interval}",
+				},
+			},
+			path: []pathElem{
+				{
+					value: "exchange",
+				},
+				{
+					value: "live",
+				},
+				{
+					value: "candles",
+				},
+				{
+					value:       "symbol",
+					placeholder: true,
+				},
+				{
+					value:       "interval",
+					placeholder: true,
+				},
+			},
+			hasPlaceholders: true,
+		},
+		supv: xync.NewSupervisor(),
+		subs: map[*conn][]map[string]string{
+			c1: {
+				{
+					"symbol":   "BTC_USD",
+					"interval": "3mins",
+				},
+				{
+					"symbol":   "LTC_USD",
+					"interval": "10mins",
+				},
+			},
+			c2: {
+				{
+					"symbol":   "BTC_USD",
+					"interval": "3mins",
+				},
+				{
+					"symbol":   "LTC_USD",
+					"interval": "15mins",
+				},
+			},
+			c3: {
+				{
+					"symbol":   "BTC_USD",
+					"interval": "3mins",
+				},
+			},
+		},
+	}
+	closeCh := make(chan struct{})
+
+	go func() {
+		assert.Eventually(t, func() bool {
+			select {
+			case data := <-writeCh:
+				assert.JSONEq(t, `{
+					"topic":"drop~update@exchange.live.candles.BTC_USD.3mins",
+					"reason":"error"
+				}`, string(data))
+
+				return true
+			default:
+				return false
+			}
+		}, time.Second, time.Millisecond*250)
+
+		closeCh <- struct{}{}
+	}()
+
+	tpc.DropOne(c3.ctx, "error")
+	<-closeCh
+
+	require.NotNil(t, tpc.subs[c1])
+	assert.Len(t, tpc.subs[c1], 2)
+	require.NotNil(t, tpc.subs[c2])
+	assert.Len(t, tpc.subs[c2], 2)
+	require.Nil(t, tpc.subs[c3])
+
+	assert.NotPanics(t, func() {
+		tpc.DropOne(context.Background(), "123")
+	})
 }
 
 func Test_topic_OnSub(t *testing.T) {
@@ -1758,7 +1859,7 @@ func Test_areTopicParamsEqual(t *testing.T) {
 func prepConn(ch chan []byte) *conn {
 	return &conn{
 		log:     zerolog.Nop(),
-		ctx:     _connCtx,
+		ctx:     context.WithValue(_connCtx, _wsCtxID, xid.New().String()),
 		writeCh: ch,
 	}
 }
