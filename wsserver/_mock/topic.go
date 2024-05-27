@@ -38,8 +38,11 @@ var _ wsserver.Topic = &Topic{}
 //			OnUnsubFunc: func(fn func(context.Context))  {
 //				panic("mock out the OnUnsub method")
 //			},
-//			PublishFunc: func(ctx context.Context, payload any, filter func(context.Context, string) bool)  {
-//				panic("mock out the Publish method")
+//			PublishManyFunc: func(ctx context.Context, payload any, filter func(context.Context, string) bool)  {
+//				panic("mock out the PublishMany method")
+//			},
+//			PublishOneFunc: func(ctx context.Context, payload any)  {
+//				panic("mock out the PublishOne method")
 //			},
 //		}
 //
@@ -66,8 +69,11 @@ type Topic struct {
 	// OnUnsubFunc mocks the OnUnsub method.
 	OnUnsubFunc func(fn func(context.Context))
 
-	// PublishFunc mocks the Publish method.
-	PublishFunc func(ctx context.Context, payload any, filter func(context.Context, string) bool)
+	// PublishManyFunc mocks the PublishMany method.
+	PublishManyFunc func(ctx context.Context, payload any, filter func(context.Context, string) bool)
+
+	// PublishOneFunc mocks the PublishOne method.
+	PublishOneFunc func(ctx context.Context, payload any)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -107,14 +113,21 @@ type Topic struct {
 			// Fn is the fn argument value.
 			Fn func(context.Context)
 		}
-		// Publish holds details about calls to the Publish method.
-		Publish []struct {
+		// PublishMany holds details about calls to the PublishMany method.
+		PublishMany []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Payload is the payload argument value.
 			Payload any
 			// Filter is the filter argument value.
 			Filter func(context.Context, string) bool
+		}
+		// PublishOne holds details about calls to the PublishOne method.
+		PublishOne []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Payload is the payload argument value.
+			Payload any
 		}
 	}
 	lockDropMany    sync.RWMutex
@@ -123,7 +136,8 @@ type Topic struct {
 	lockOnLastUnsub sync.RWMutex
 	lockOnSub       sync.RWMutex
 	lockOnUnsub     sync.RWMutex
-	lockPublish     sync.RWMutex
+	lockPublishMany sync.RWMutex
+	lockPublishOne  sync.RWMutex
 }
 
 // DropMany calls DropManyFunc.
@@ -330,8 +344,8 @@ func (mock *Topic) OnUnsubCalls() []struct {
 	return calls
 }
 
-// Publish calls PublishFunc.
-func (mock *Topic) Publish(ctx context.Context, payload any, filter func(context.Context, string) bool) {
+// PublishMany calls PublishManyFunc.
+func (mock *Topic) PublishMany(ctx context.Context, payload any, filter func(context.Context, string) bool) {
 	callInfo := struct {
 		Ctx     context.Context
 		Payload any
@@ -341,20 +355,20 @@ func (mock *Topic) Publish(ctx context.Context, payload any, filter func(context
 		Payload: payload,
 		Filter:  filter,
 	}
-	mock.lockPublish.Lock()
-	mock.calls.Publish = append(mock.calls.Publish, callInfo)
-	mock.lockPublish.Unlock()
-	if mock.PublishFunc == nil {
+	mock.lockPublishMany.Lock()
+	mock.calls.PublishMany = append(mock.calls.PublishMany, callInfo)
+	mock.lockPublishMany.Unlock()
+	if mock.PublishManyFunc == nil {
 		return
 	}
-	mock.PublishFunc(ctx, payload, filter)
+	mock.PublishManyFunc(ctx, payload, filter)
 }
 
-// PublishCalls gets all the calls that were made to Publish.
+// PublishManyCalls gets all the calls that were made to PublishMany.
 // Check the length with:
 //
-//	len(mockedTopic.PublishCalls())
-func (mock *Topic) PublishCalls() []struct {
+//	len(mockedTopic.PublishManyCalls())
+func (mock *Topic) PublishManyCalls() []struct {
 	Ctx     context.Context
 	Payload any
 	Filter  func(context.Context, string) bool
@@ -364,8 +378,44 @@ func (mock *Topic) PublishCalls() []struct {
 		Payload any
 		Filter  func(context.Context, string) bool
 	}
-	mock.lockPublish.RLock()
-	calls = mock.calls.Publish
-	mock.lockPublish.RUnlock()
+	mock.lockPublishMany.RLock()
+	calls = mock.calls.PublishMany
+	mock.lockPublishMany.RUnlock()
+	return calls
+}
+
+// PublishOne calls PublishOneFunc.
+func (mock *Topic) PublishOne(ctx context.Context, payload any) {
+	callInfo := struct {
+		Ctx     context.Context
+		Payload any
+	}{
+		Ctx:     ctx,
+		Payload: payload,
+	}
+	mock.lockPublishOne.Lock()
+	mock.calls.PublishOne = append(mock.calls.PublishOne, callInfo)
+	mock.lockPublishOne.Unlock()
+	if mock.PublishOneFunc == nil {
+		return
+	}
+	mock.PublishOneFunc(ctx, payload)
+}
+
+// PublishOneCalls gets all the calls that were made to PublishOne.
+// Check the length with:
+//
+//	len(mockedTopic.PublishOneCalls())
+func (mock *Topic) PublishOneCalls() []struct {
+	Ctx     context.Context
+	Payload any
+} {
+	var calls []struct {
+		Ctx     context.Context
+		Payload any
+	}
+	mock.lockPublishOne.RLock()
+	calls = mock.calls.PublishOne
+	mock.lockPublishOne.RUnlock()
 	return calls
 }

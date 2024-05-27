@@ -182,15 +182,22 @@ func (r *Router) removeConn(c *conn) {
 //
 //go:generate ../scripts/codegen/mock Topic
 type Topic interface {
-	// Publish should send a new event with the provided payload
+	// PublishMany should send a new event with the provided payload
 	// to all selected connections.
 	// The optional func parameter should be called with each
 	// connection's context and built topic to determine whether that
 	// connection should be selected.
-	Publish(
+	PublishMany(
 		ctx context.Context,
 		payload any,
 		filter func(context.Context, string) bool,
+	)
+
+	// PublishOne should send a new event with the provided payload
+	// to the connection that is associated with the provided context.
+	PublishOne(
+		ctx context.Context,
+		payload any,
 	)
 
 	// DropMany should remove the selected connections from the
@@ -454,11 +461,11 @@ func (t *topic) publish(
 	wg.Wait()
 }
 
-// Publish sends a new event with the provided payload
+// PublishMany sends a new event with the provided payload
 // to all selected connections.
 // The func parameter is called with each connection's context and built
 // topic to determine whether that connection should be selected.
-func (t *topic) Publish(
+func (t *topic) PublishMany(
 	pubCtx context.Context,
 	payload any,
 	filter func(context.Context, string) bool,
@@ -478,6 +485,22 @@ func (t *topic) Publish(
 	}
 
 	t.publish(pubCtx, ptrn, t.subs, data, middlewares...)
+}
+
+// PublishOne sends a new event with the provided payload
+// to the connection that is associated with the provided context.
+func (t *topic) PublishOne(
+	ctx context.Context,
+	payload any,
+) {
+	id := ctx.Value(_wsCtxID)
+	if id == nil {
+		return
+	}
+
+	t.PublishMany(ctx, payload, func(ctx context.Context, _ string) bool {
+		return id == ctx.Value(_wsCtxID)
+	})
 }
 
 // DropMany removes the selected connections from the subscribers

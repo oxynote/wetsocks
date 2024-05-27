@@ -1095,7 +1095,7 @@ func Test_topic_publish(t *testing.T) {
 	assert.Equal(t, 20, middlewareCalls)
 }
 
-func Test_topic_Publish(t *testing.T) {
+func Test_topic_PublishMany(t *testing.T) {
 	var (
 		middlewareMu    sync.Mutex
 		middlewareCalls int
@@ -1233,7 +1233,7 @@ func Test_topic_Publish(t *testing.T) {
 		Msg string `json:"msg"`
 	}{Msg: "hello"}
 
-	tpc.Publish(pubCtx, payload, nil)
+	tpc.PublishMany(pubCtx, payload, nil)
 	<-closeCh
 
 	assert.Equal(t, 20, middlewareCalls)
@@ -1257,7 +1257,7 @@ func Test_topic_Publish(t *testing.T) {
 		Msg string `json:"msg"`
 	}{Msg: "hello"}
 
-	tpc.Publish(pubCtx, payload, func(mctx context.Context, _ string) bool {
+	tpc.PublishMany(pubCtx, payload, func(mctx context.Context, _ string) bool {
 		intv := TopicParamFromContext(mctx, "interval")
 
 		middlewareMu.Lock()
@@ -1269,6 +1269,103 @@ func Test_topic_Publish(t *testing.T) {
 	<-closeCh
 
 	assert.Equal(t, 22, middlewareCalls)
+}
+
+func Test_topic_PublishOne(t *testing.T) {
+	writeCh := make(chan []byte)
+	c := prepConn(writeCh)
+	tpc := topic{
+		pattern: pattern{
+			topic: wsutil.Topic{
+				Operation: "update",
+				Path: []string{
+					"exchange",
+					"live",
+					"candles",
+					"{symbol}",
+					"{interval}",
+				},
+			},
+			path: []pathElem{
+				{
+					value: "exchange",
+				},
+				{
+					value: "live",
+				},
+				{
+					value: "candles",
+				},
+				{
+					value:       "symbol",
+					placeholder: true,
+				},
+				{
+					value:       "interval",
+					placeholder: true,
+				},
+			},
+			hasPlaceholders: true,
+		},
+		subs: map[*conn][]map[string]string{
+			prepConn(writeCh): {
+				{
+					"symbol":   "BTC_USD",
+					"interval": "3mins",
+				},
+				{
+					"symbol":   "ETH_BTC",
+					"interval": "10mins",
+				},
+			},
+			prepConn(writeCh): {
+				{
+					"symbol":   "BTC_USD",
+					"interval": "3mins",
+				},
+				{
+					"symbol":   "LTC_BTC",
+					"interval": "15mins",
+				},
+			},
+			c: {
+				{
+					"symbol":   "LTC_USD",
+					"interval": "30mins",
+				},
+			},
+		},
+	}
+	closeCh := make(chan struct{})
+
+	go func() {
+		assert.Eventually(t, func() bool {
+			select {
+			case data := <-writeCh:
+				assert.JSONEq(t, `{
+					"topic":"pub~update@exchange.live.candles.LTC_USD.30mins",
+					"payload":{"msg":"hello"}
+				}`, string(data))
+
+				return true
+			default:
+				return false
+			}
+		}, time.Second, time.Millisecond*250)
+
+		closeCh <- struct{}{}
+	}()
+
+	payload := struct {
+		Msg string `json:"msg"`
+	}{Msg: "hello"}
+
+	tpc.PublishOne(c.ctx, payload)
+	<-closeCh
+
+	assert.NotPanics(t, func() {
+		tpc.PublishOne(context.Background(), payload)
+	})
 }
 
 func Test_topic_DropMany(t *testing.T) {
