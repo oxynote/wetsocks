@@ -11,6 +11,7 @@ import (
 
 // SoloSubKeeper holds subscriptions whose payloads are sent one by one.
 type SoloSubKeeper struct {
+	metrics       SubKeeperMetrics
 	supv          *xync.Supervisor
 	fmt           SoloSubFormatter
 	cooldown      time.Duration
@@ -27,8 +28,9 @@ type SoloSubKeeper struct {
 // The duration parameter determines how long to wait between payload events.
 // The bool parameter determines if a manual confirmation should be
 // expected or not.
-func NewSoloSubKeeper(fmt SoloSubFormatter, cooldown time.Duration, manualConfirm bool) *SoloSubKeeper {
+func NewSoloSubKeeper(metrics SubKeeperMetrics, fmt SoloSubFormatter, cooldown time.Duration, manualConfirm bool) *SoloSubKeeper {
 	return &SoloSubKeeper{
+		metrics:       metrics,
 		supv:          xync.NewSupervisor(),
 		fmt:           fmt,
 		cooldown:      cooldown,
@@ -70,6 +72,7 @@ func (s *SoloSubKeeper) ResetAll() {
 		sub.confirmed = false
 		if !sub.subbed {
 			delete(s.subs, topic)
+			s.metrics.DecWsSubs()
 		}
 	}
 }
@@ -115,18 +118,20 @@ func (s *SoloSubKeeper) Subscribe(topic string) {
 		subbed: true,
 	}
 
+	s.metrics.IncWsSubs()
 	s.execFns()
 }
 
 // UnsubscribeLocal works the same way as Unsubscribe but without triggering
 // an unsubscription event. In other words, it just deletes the subscription
-// locally. It's useful in situation when the server sends a subscription
-// drop event after successful subscription.
+// locally. It's useful in situations when the server sends a subscription
+// drop event after a successful subscription.
 func (s *SoloSubKeeper) UnsubscribeLocal(topic string) {
 	s.subsMu.Lock()
 	defer s.subsMu.Unlock()
 
 	delete(s.subs, topic)
+	s.metrics.DecWsSubs()
 }
 
 // Unsubscribe unsubscribes from the provided topic.
@@ -151,6 +156,8 @@ func (s *SoloSubKeeper) unsubscribe(topic string, sub *soloSub) bool {
 	if sub.subbed && !sub.confirmed || !sub.subbed && sub.confirmed {
 		// delete if no additional payloads need to be sent
 		delete(s.subs, topic)
+		s.metrics.DecWsSubs()
+
 		return false
 	} else if !sub.subbed && !sub.confirmed {
 		return false
@@ -218,7 +225,13 @@ func (s *SoloSubKeeper) confirm(subbed bool, topic string, sub *soloSub) {
 
 	if !subbed {
 		delete(s.subs, topic)
+		s.metrics.DecWsSubs()
+		s.metrics.IncWsUnsubConfirmations()
+
+		return
 	}
+
+	s.metrics.IncWsSubConfirmations()
 }
 
 // soloSub represents a single subscriber.

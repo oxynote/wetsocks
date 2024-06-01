@@ -15,6 +15,7 @@ import (
 // key and requires that the same number of unsubscriptions should
 // be made as well.
 type GroupedSubKeeper[K comparable] struct {
+	metrics       SubKeeperMetrics
 	supv          *xync.Supervisor
 	fmt           GroupedSubFormatter[K]
 	cooldown      time.Duration
@@ -31,8 +32,9 @@ type GroupedSubKeeper[K comparable] struct {
 // The duration parameter determines how long to wait between payload events.
 // The bool parameter determines if a manual confirmation should be
 // expected or not.
-func NewGroupedSubKeeper[K comparable](fmt GroupedSubFormatter[K], cooldown time.Duration, manualConfirm bool) *GroupedSubKeeper[K] {
+func NewGroupedSubKeeper[K comparable](metrics SubKeeperMetrics, fmt GroupedSubFormatter[K], cooldown time.Duration, manualConfirm bool) *GroupedSubKeeper[K] {
 	return &GroupedSubKeeper[K]{
+		metrics:       metrics,
 		supv:          xync.NewSupervisor(),
 		fmt:           fmt,
 		cooldown:      cooldown,
@@ -107,6 +109,8 @@ func (g *GroupedSubKeeper[K]) ResetAll() {
 
 			if v.count == 0 {
 				delete(vv, key)
+				g.metrics.DecWsSubs()
+
 				continue
 			}
 
@@ -192,6 +196,8 @@ func (g *GroupedSubKeeper[K]) Subscribe(topic string, keys ...K) {
 
 		v.count++
 		vv[keys[i]] = v
+
+		g.metrics.IncWsSubs()
 	}
 
 	if ok {
@@ -229,6 +235,8 @@ func (g *GroupedSubKeeper[K]) unsubscribe(topic string, keys []K, vv map[K]group
 		if v.count == 1 && !v.confirmed || v.count == 0 && v.confirmed {
 			// delete if no additional payloads need to be sent
 			delete(vv, keys[i])
+			g.metrics.DecWsSubs()
+
 			continue
 		} else if v.count == 0 {
 			continue
@@ -327,8 +335,16 @@ func (g *GroupedSubKeeper[K]) confirm(subbed bool, topic string, vv map[K]groupe
 
 		v.confirmed = true
 
+		if subbed {
+			g.metrics.IncWsSubConfirmations()
+		} else {
+			g.metrics.IncWsUnsubConfirmations()
+		}
+
 		if v.count == 0 {
 			delete(vv, keys[i])
+			g.metrics.DecWsSubs()
+
 			continue
 		}
 

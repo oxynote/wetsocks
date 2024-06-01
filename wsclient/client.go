@@ -35,9 +35,10 @@ var (
 
 // Client handles an active client-side WebSocket connection.
 type Client struct {
-	opts Options
-	log  zerolog.Logger
-	supv *xync.Supervisor
+	opts    Options
+	log     zerolog.Logger
+	supv    *xync.Supervisor
+	metrics Metrics
 
 	stop   context.CancelFunc
 	connMu sync.RWMutex
@@ -72,18 +73,29 @@ type Options struct {
 	// new WebSocket connection is opened (via the Open method) and
 	// closed (via the Close method).
 	Cron *cron.Cron
+
+	// RecoveryFunc is used to handle panics.
+	// An empty func is used if it's set to nil.
+	RecoveryFunc func(any)
 }
 
 // New creates a fresh instance of the WebSocket client.
-func New(logger zerolog.Logger, opts Options) *Client {
+func New(logger zerolog.Logger, metrics Metrics, opts Options) *Client {
 	if opts.ReadLimit == 0 {
 		opts.ReadLimit = _defaultReadLimit
 	}
 
+	if opts.RecoveryFunc == nil {
+		opts.RecoveryFunc = func(_ any) {}
+	}
+
 	c := &Client{
-		log:     logger,
-		opts:    opts,
-		supv:    xync.NewSupervisor(),
+		log:  logger,
+		opts: opts,
+		supv: xync.NewSupervisor(
+			xync.WithSupervisorRecovery(opts.RecoveryFunc),
+		),
+		metrics: metrics,
 		writeCh: make(chan json.RawMessage),
 	}
 	c.req.nextID = _defaultReqID
@@ -150,6 +162,8 @@ func (c *Client) Open(ctx context.Context) error {
 	if c.opts.Cron != nil {
 		c.opts.Cron.Start()
 	}
+
+	c.metrics.IncWsOpenConnections()
 
 	return nil
 }
@@ -296,6 +310,8 @@ func (c *Client) reset() {
 	if c.opts.Cron != nil {
 		c.opts.Cron.Stop()
 	}
+
+	c.metrics.DecWsOpenConnections()
 }
 
 // OnRead sets the provided function to be executed on a new incoming
@@ -380,4 +396,18 @@ func (c *Client) Send(ctx context.Context, payload any) (json.RawMessage, error)
 	case resp := <-respCh:
 		return resp, nil
 	}
+}
+
+// Metrics is an interface that should be used to track the status metrics
+// of a connection.
+//
+//go:generate ../scripts/codegen/mock -t internal Metrics
+type Metrics interface {
+	// IncWsOpenConnections should increase the number of open
+	// connections.
+	IncWsOpenConnections()
+
+	// DecWsOpenConnections should increase the number of closed
+	// connections.
+	DecWsOpenConnections()
 }

@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 
 func Test_New(t *testing.T) {
 	// default options
-	c := New(zerolog.Nop(), Options{})
+	c := New(zerolog.Nop(), &MetricsMock{}, Options{})
 	require.NotNil(t, c)
 	assert.Equal(t, int64(_defaultReadLimit), c.opts.ReadLimit)
 	assert.NotZero(t, c.log)
@@ -39,9 +39,10 @@ func Test_New(t *testing.T) {
 
 	// non-default options
 	opts := Options{
-		ReadLimit: 1,
+		ReadLimit:    1,
+		RecoveryFunc: func(_ any) {},
 	}
-	c = New(zerolog.Nop(), opts)
+	c = New(zerolog.Nop(), &MetricsMock{}, opts)
 	require.NotNil(t, c)
 	assert.Equal(t, opts.ReadLimit, c.opts.ReadLimit)
 	assert.NotZero(t, c.log)
@@ -184,8 +185,9 @@ func Test_Client_Open(t *testing.T) {
 			ReadLimit: _defaultReadLimit,
 			Cron:      cron.New(),
 		},
-		supv: xync.NewSupervisor(),
-		conn: &websocket.Conn{},
+		supv:    xync.NewSupervisor(),
+		metrics: &MetricsMock{},
+		conn:    &websocket.Conn{},
 		readFns: []func(context.Context, json.RawMessage){
 			func(_ context.Context, data json.RawMessage) {
 				assert.Contains(t, []string{
@@ -469,8 +471,9 @@ func Test_Client_Close(t *testing.T) {
 		opts: Options{
 			Cron: cron.New(),
 		},
-		supv: xync.NewSupervisor(),
-		stop: func() { called = true },
+		supv:    xync.NewSupervisor(),
+		metrics: &MetricsMock{},
+		stop:    func() { called = true },
 	}
 	c.req.nextID = 300
 	c.req.respFns = map[uint64]func(json.RawMessage){

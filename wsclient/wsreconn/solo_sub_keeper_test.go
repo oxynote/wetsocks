@@ -14,8 +14,9 @@ import (
 
 func Test_NewSoloSubKeeper(t *testing.T) {
 	fmt := &SoloSubFormatterMock{}
-	s := NewSoloSubKeeper(fmt, 1, true)
+	s := NewSoloSubKeeper(&SubKeeperMetricsMock{}, fmt, 1, true)
 	require.NotNil(t, s)
+	assert.NotNil(t, s.metrics)
 	assert.NotNil(t, s.supv)
 	assert.Same(t, fmt, s.fmt)
 	assert.Equal(t, time.Duration(1), s.cooldown)
@@ -72,6 +73,7 @@ func Test_SoloSubKeeper_Payloads(t *testing.T) {
 
 func Test_SoloSubKeeper_ResetAll(t *testing.T) {
 	s := SoloSubKeeper{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]*soloSub{
 			"1": {
 				confirmed: true,
@@ -143,7 +145,8 @@ func Test_SoloSubKeeper_Subscribe(t *testing.T) {
 	)
 
 	s := &SoloSubKeeper{
-		supv: xync.NewSupervisor(),
+		metrics: &SubKeeperMetricsMock{},
+		supv:    xync.NewSupervisor(),
 		subs: map[string]*soloSub{
 			"hey": {
 				subbed:    false,
@@ -205,6 +208,7 @@ func Test_SoloSubKeeper_Subscribe(t *testing.T) {
 
 func Test_SoloSubKeeper_UnsubscribeLocal(t *testing.T) {
 	s := SoloSubKeeper{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]*soloSub{
 			"test1": {
 				subbed:    true,
@@ -224,7 +228,8 @@ func Test_SoloSubKeeper_Unsubscribe(t *testing.T) {
 	)
 
 	s := SoloSubKeeper{
-		supv: xync.NewSupervisor(),
+		metrics: &SubKeeperMetricsMock{},
+		supv:    xync.NewSupervisor(),
 		subs: map[string]*soloSub{
 			"test1": {
 				subbed: true,
@@ -287,6 +292,7 @@ func Test_SoloSubKeeper_Unsubscribe(t *testing.T) {
 
 func Test_SoloSubKeeper_unsubscribe(t *testing.T) {
 	s := SoloSubKeeper{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]*soloSub{
 			"test11": {
 				subbed: true,
@@ -338,7 +344,8 @@ func Test_SoloSubKeeper_UnsubscribeAll(t *testing.T) {
 	var calls int
 
 	s := SoloSubKeeper{
-		supv: xync.NewSupervisor(),
+		metrics: &SubKeeperMetricsMock{},
+		supv:    xync.NewSupervisor(),
 		subs: map[string]*soloSub{
 			"test1": {
 				subbed: true,
@@ -404,6 +411,7 @@ func Test_SoloSubKeeper_UnsubscribeAll(t *testing.T) {
 
 func Test_SoloSubKeeper_ConfirmSub(t *testing.T) {
 	s := SoloSubKeeper{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]*soloSub{
 			"a": {
 				subbed: true,
@@ -420,6 +428,7 @@ func Test_SoloSubKeeper_ConfirmSub(t *testing.T) {
 
 func Test_SoloSubKeeper_ConfirmUnsub(t *testing.T) {
 	s := SoloSubKeeper{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]*soloSub{
 			"a": {
 				subbed: false,
@@ -435,6 +444,7 @@ func Test_SoloSubKeeper_ConfirmUnsub(t *testing.T) {
 
 func Test_SoloSubKeeper_confirm(t *testing.T) {
 	s := SoloSubKeeper{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]*soloSub{
 			"1": {
 				subbed: false,
@@ -474,7 +484,8 @@ func Test_soloSub_Payload(t *testing.T) {
 		},
 	}
 	s := &SoloSubKeeper{
-		fmt: fmt,
+		metrics: &SubKeeperMetricsMock{},
+		fmt:     fmt,
 	}
 	sub := soloSub{
 		keeper: s,

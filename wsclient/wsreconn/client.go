@@ -17,10 +17,11 @@ import (
 // Client wraps a WebSocket client and adds automatic
 // reconnection as well as resubscription logic.
 type Client struct {
-	opts   ClientOptions
-	log    zerolog.Logger
-	keeper SubKeeper
-	ws     *wsclient.Client
+	opts    ClientOptions
+	log     zerolog.Logger
+	metrics ClientMetrics
+	keeper  SubKeeper
+	ws      *wsclient.Client
 
 	procMu sync.Mutex
 	proc   *timeutil.PeriodicExec
@@ -51,9 +52,14 @@ type ClientOptions struct {
 func NewClient(
 	ctx context.Context,
 	logger zerolog.Logger,
+	metrics ClientMetrics,
 	opts ClientOptions,
 	keeper SubKeeper,
 ) (*Client, error) {
+	if opts.RecoveryFunc == nil {
+		opts.RecoveryFunc = func(_ any) {}
+	}
+
 	if opts.BaseContext == nil {
 		opts.BaseContext = context.Background
 	}
@@ -63,12 +69,18 @@ func NewClient(
 	}
 
 	s := &Client{
-		opts:   opts,
-		log:    logger,
-		keeper: keeper,
-		ws:     wsclient.New(logger, opts.Options),
+		opts:    opts,
+		log:     logger,
+		metrics: metrics,
+		keeper:  keeper,
+		ws:      wsclient.New(logger, metrics, opts.Options),
 	}
-	s.proc = timeutil.NewPeriodicExec(opts.CheckAfter, time.Second, s.process)
+	s.proc = timeutil.NewPeriodicExec(
+		opts.CheckAfter,
+		time.Second,
+		s.process,
+		opts.RecoveryFunc,
+	)
 
 	multiCtx, multiCancel := ctxutil.MultiContext(ctx, opts.BaseContext())
 	defer multiCancel()
@@ -115,6 +127,7 @@ func (s *Client) process(ctx context.Context) {
 
 	if !s.ws.IsOpen() {
 		s.keeper.ResetAll()
+		s.metrics.IncWsConnectionAttempts()
 
 		if err := s.ws.Open(ctx); err != nil {
 			l := logutil.NoContextLogger(s.log, err)
@@ -132,6 +145,8 @@ func (s *Client) process(ctx context.Context) {
 		if p == nil {
 			continue
 		}
+
+		s.metrics.IncWsWrites()
 
 		if confirm != nil {
 			res, err := s.ws.Send(ctx, p)
@@ -208,4 +223,37 @@ type SubPayloader interface {
 	// it is skipped).
 	// If the function is nil, the response should not expected.
 	Payload() (any, func(json.RawMessage))
+}
+
+// ClientMetrics is an interface that handles reconnection-related metrics.
+//
+//go:generate ../../scripts/codegen/mock -t internal ClientMetrics
+type ClientMetrics interface {
+	wsclient.Metrics
+
+	// IncConnectionAttempts should increase the connection attempt
+	// number.
+	IncWsConnectionAttempts()
+
+	// IncWsWrites should increase the number of writes to a connection.
+	IncWsWrites()
+}
+
+// SubKeeperMetrics is an interface that handles subscription-related metrics.
+//
+//go:generate ../../scripts/codegen/mock -t internal SubKeeperMetrics
+type SubKeeperMetrics interface {
+	// IncWsSubs should increase the subscription number.
+	IncWsSubs()
+
+	// DecWsSubs should decrease the subscription number.
+	DecWsSubs()
+
+	// IncWsSubConfirmations should increase the
+	// subscription confirmation number.
+	IncWsSubConfirmations()
+
+	// IncWsUnsubConfirmations should decrease the
+	// unsubscription confirmation number.
+	IncWsUnsubConfirmations()
 }

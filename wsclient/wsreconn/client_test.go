@@ -53,6 +53,7 @@ func Test_NewClient(t *testing.T) {
 	s, err := NewClient(
 		context.Background(),
 		zerolog.Nop(),
+		&ClientMetricsMock{},
 		ClientOptions{
 			Options: wsclient.Options{
 				URL: hs.URL,
@@ -75,6 +76,7 @@ func Test_NewClient(t *testing.T) {
 	s, err = NewClient(
 		context.Background(),
 		zerolog.Nop(),
+		&ClientMetricsMock{},
 		ClientOptions{
 			Options: wsclient.Options{
 				URL: hs.URL,
@@ -85,6 +87,8 @@ func Test_NewClient(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, s)
 	assert.NotZero(t, s.opts)
+	assert.NotNil(t, s.metrics)
+	assert.NotNil(t, s.opts.RecoveryFunc)
 	assert.NotNil(t, s.opts.BaseContext)
 	assert.Equal(t, time.Second*30, s.opts.CheckAfter)
 	assert.NotZero(t, s.log)
@@ -99,7 +103,7 @@ func Test_NewClient(t *testing.T) {
 	ch := make(chan struct{})
 	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Millisecond, func(_ context.Context) {
 		ch <- struct{}{}
-	})
+	}, func(_ any) {})
 
 	go s.proc.Start()
 
@@ -124,9 +128,11 @@ func Test_NewClient(t *testing.T) {
 	s, err = NewClient(
 		context.Background(),
 		zerolog.Nop(),
+		&ClientMetricsMock{},
 		ClientOptions{
 			Options: wsclient.Options{
-				URL: hs.URL,
+				URL:          hs.URL,
+				RecoveryFunc: func(_ any) {},
 			},
 			BaseContext: func() context.Context {
 				baseCtxCalled = true
@@ -139,6 +145,8 @@ func Test_NewClient(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, s)
 	assert.NotZero(t, s.opts)
+	assert.NotNil(t, s.metrics)
+	assert.NotNil(t, s.opts.RecoveryFunc)
 	assert.NotNil(t, s.opts.BaseContext)
 	assert.Equal(t, time.Hour, s.opts.CheckAfter)
 	assert.NotZero(t, s.log)
@@ -152,7 +160,7 @@ func Test_NewClient(t *testing.T) {
 
 	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Millisecond, func(_ context.Context) {
 		ch <- struct{}{}
-	})
+	}, func(_ any) {})
 
 	go s.proc.Start()
 
@@ -184,11 +192,11 @@ func Test_Client_Close(t *testing.T) {
 	t.Cleanup(hs.Close)
 
 	s := Client{
-		ws: wsclient.New(zerolog.Nop(), wsclient.Options{
+		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
 	}
-	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Second, func(_ context.Context) {})
+	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Second, func(_ context.Context) {}, func(_ any) {})
 
 	go s.proc.Start()
 
@@ -214,7 +222,7 @@ func Test_Client_OnRead(t *testing.T) {
 	t.Cleanup(hs.Close)
 
 	s := Client{
-		ws: wsclient.New(zerolog.Nop(), wsclient.Options{
+		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
 	}
@@ -292,9 +300,10 @@ func Test_Client_process(t *testing.T) {
 				return context.Background()
 			},
 		},
-		log:    zerolog.New(out),
-		keeper: keeper,
-		ws: wsclient.New(zerolog.Nop(), wsclient.Options{
+		log:     zerolog.New(out),
+		metrics: &ClientMetricsMock{},
+		keeper:  keeper,
+		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
 	}

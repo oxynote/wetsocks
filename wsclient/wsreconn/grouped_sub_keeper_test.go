@@ -14,8 +14,9 @@ import (
 
 func Test_NewGroupedSubKeeper(t *testing.T) {
 	fmt := &GroupedSubFormatterMock[string]{}
-	g := NewGroupedSubKeeper(fmt, 1, true)
+	g := NewGroupedSubKeeper(&SubKeeperMetricsMock{}, fmt, 1, true)
 	require.NotNil(t, g)
+	assert.NotNil(t, g.metrics)
 	assert.NotNil(t, g.supv)
 	assert.Same(t, fmt, g.fmt)
 	assert.Equal(t, time.Duration(1), g.cooldown)
@@ -122,6 +123,7 @@ func Test_GrouptedSubKeeper_Payloads(t *testing.T) {
 
 func Test_GroupedSubKeeper_ResetAll(t *testing.T) {
 	g := GroupedSubKeeper[string]{
+		metrics:  &SubKeeperMetricsMock{},
 		cooldown: time.Hour,
 		subs: map[string]map[string]groupedSub{
 			"A": {
@@ -266,7 +268,8 @@ func Test_GroupedSubKeeper_Subscribe(t *testing.T) {
 	)
 
 	g := &GroupedSubKeeper[string]{
-		supv: xync.NewSupervisor(),
+		metrics: &SubKeeperMetricsMock{},
+		supv:    xync.NewSupervisor(),
 		subs: map[string]map[string]groupedSub{
 			"Q": {
 				"Q_1": {
@@ -360,7 +363,8 @@ func Test_GroupedSubKeeper_Unsubscribe(t *testing.T) {
 	)
 
 	g := &GroupedSubKeeper[string]{
-		supv: xync.NewSupervisor(),
+		metrics: &SubKeeperMetricsMock{},
+		supv:    xync.NewSupervisor(),
 		subs: map[string]map[string]groupedSub{
 			"V": {
 				"V_1": {
@@ -444,6 +448,7 @@ func Test_GroupedSubKeeper_Unsubscribe(t *testing.T) {
 
 func Test_GroupedSubKeeper_unsubscribe(t *testing.T) {
 	g := &GroupedSubKeeper[string]{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]map[string]groupedSub{
 			"V": {
 				"V_1": {
@@ -548,7 +553,8 @@ func Test_GroupedSubKeeper_UnsubscribeAll(t *testing.T) {
 	var calls int
 
 	g := &GroupedSubKeeper[string]{
-		supv: xync.NewSupervisor(),
+		metrics: &SubKeeperMetricsMock{},
+		supv:    xync.NewSupervisor(),
 		subs: map[string]map[string]groupedSub{
 			"V": {
 				"V_1": {
@@ -612,6 +618,7 @@ func Test_GroupedSubKeeper_UnsubscribeAll(t *testing.T) {
 
 func Test_GroupedSubKeeper_ConfirmSub(t *testing.T) {
 	g := &GroupedSubKeeper[string]{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]map[string]groupedSub{
 			"T": {
 				"T_1": {
@@ -662,6 +669,7 @@ func Test_GroupedSubKeeper_ConfirmSub(t *testing.T) {
 
 func Test_GroupedSubKeeper_ConfirmUnsub(t *testing.T) {
 	g := &GroupedSubKeeper[string]{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]map[string]groupedSub{
 			"G": {
 				"G_1": {
@@ -743,6 +751,7 @@ func Test_GroupedSubKeeper_ConfirmUnsub(t *testing.T) {
 
 func Test_GroupedSubKeeper_confirm(t *testing.T) {
 	g := &GroupedSubKeeper[string]{
+		metrics: &SubKeeperMetricsMock{},
 		subs: map[string]map[string]groupedSub{
 			"T": {
 				"T_1": {
@@ -847,7 +856,8 @@ func Test_groupedPayload_Payload(t *testing.T) {
 		},
 	}
 	g := &GroupedSubKeeper[string]{
-		fmt: fmt,
+		metrics: &SubKeeperMetricsMock{},
+		fmt:     fmt,
 	}
 	pay := groupedPayload[string]{
 		keeper: g,
