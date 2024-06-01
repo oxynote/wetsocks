@@ -85,6 +85,8 @@ func NewClient(
 	multiCtx, multiCancel := ctxutil.MultiContext(ctx, opts.BaseContext())
 	defer multiCancel()
 
+	s.metrics.IncWsConnectionAttempts()
+
 	if err := s.ws.Open(multiCtx); err != nil {
 		return nil, err
 	}
