@@ -229,7 +229,7 @@ type SubPayloader interface {
 
 // ClientMetrics is an interface that handles reconnection-related metrics.
 //
-//go:generate ../../scripts/codegen/mock -t internal ClientMetrics
+//go:generate ../../scripts/codegen/mock -t both ClientMetrics
 type ClientMetrics interface {
 	wsclient.Metrics
 
@@ -243,7 +243,7 @@ type ClientMetrics interface {
 
 // SubKeeperMetrics is an interface that handles subscription-related metrics.
 //
-//go:generate ../../scripts/codegen/mock -t internal SubKeeperMetrics
+//go:generate ../../scripts/codegen/mock -t both SubKeeperMetrics
 type SubKeeperMetrics interface {
 	// IncWsSubs should increase the subscription number.
 	IncWsSubs()

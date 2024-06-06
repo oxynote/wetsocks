@@ -10,7 +10,7 @@ import (
 
 // Ensure, that GroupedSubFormatterMock does implement GroupedSubFormatter.
 // If this is not the case, regenerate this file with moq.
-var _ GroupedSubFormatter[int] = &GroupedSubFormatterMock[int]{}
+var _ GroupedSubFormatter[comparable] = &GroupedSubFormatterMock[comparable]{}
 
 // GroupedSubFormatterMock is a mock implementation of GroupedSubFormatter.
 //
