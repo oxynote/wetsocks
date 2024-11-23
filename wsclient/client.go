@@ -7,6 +7,8 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"github.com/jellydator/purse/util/logutil"
 	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
@@ -14,8 +16,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"nhooyr.io/websocket"
-	"nhooyr.io/websocket/wsjson"
 )
 
 const (
@@ -171,7 +171,7 @@ func (c *Client) Open(ctx context.Context) error {
 // startReader handles reading from the active WebSocket connection.
 // Reading is handled centrally and (usually) on a separate goroutine,
 // because the context's cancellation could shut down the whole websocket
-// connection: https://github.com/nhooyr/websocket/issues/242#issuecomment-633182220
+// connection: https://github.com/coder/websocket/issues/242#issuecomment-633182220
 func (c *Client) startReader(ctx context.Context) {
 	defer logutil.Recover(
 		c.log,
@@ -239,7 +239,7 @@ func (c *Client) startReader(ctx context.Context) {
 // startWriter handles writing to the active WebSocket connection.
 // Writing is handled centrally and (usually) on a separate goroutine,
 // because the context's cancellation could shut down the whole websocket
-// connection: https://github.com/nhooyr/websocket/issues/242#issuecomment-633182220
+// connection: https://github.com/coder/websocket/issues/242#issuecomment-633182220
 func (c *Client) startWriter(ctx context.Context) {
 	defer logutil.Recover(
 		c.log,

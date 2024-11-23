@@ -172,9 +172,9 @@ func (mock *SoloSubFormatterMock) SubMessage(topic string) any {
 	mock.lockSubMessage.Unlock()
 	if mock.SubMessageFunc == nil {
 		var (
-			ifaceValOut any
+			vOut any
 		)
-		return ifaceValOut
+		return vOut
 	}
 	return mock.SubMessageFunc(topic)
 }
@@ -207,9 +207,9 @@ func (mock *SoloSubFormatterMock) UnsubMessage(topic string) any {
 	mock.lockUnsubMessage.Unlock()
 	if mock.UnsubMessageFunc == nil {
 		var (
-			ifaceValOut any
+			vOut any
 		)
-		return ifaceValOut
+		return vOut
 	}
 	return mock.UnsubMessageFunc(topic)
 }

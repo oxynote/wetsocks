@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"github.com/jellydator/purse/http/httpserver"
 	"github.com/jellydator/purse/util/errutil"
 	"github.com/jellydator/purse/util/logutil"
@@ -15,8 +17,6 @@ import (
 	"github.com/jellydator/xync"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog"
-	"nhooyr.io/websocket"
-	"nhooyr.io/websocket/wsjson"
 )
 
 const _defaultReadLimit = 1 << 15 // approx 32kb
@@ -163,7 +163,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	c, err := websocket.Accept(w, r, &s.opts.AcceptOptions)
 	if err != nil {
-		err = errutil.Wrap(err, http.StatusInternalServerError, errutil.InternalCodeGeneral, "")
+		err = errutil.Wrap(err, http.StatusInternalServerError, "general", "")
 		httpserver.RespondError(s.log, w, err)
 
 		return

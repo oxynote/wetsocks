@@ -49,10 +49,10 @@ func (mock *SubPayloaderMock) Payload() (any, func(json.RawMessage)) {
 	mock.lockPayload.Unlock()
 	if mock.PayloadFunc == nil {
 		var (
-			ifaceValOut any
-			fnOut       func(json.RawMessage)
+			vOut  any
+			fnOut func(json.RawMessage)
 		)
-		return ifaceValOut, fnOut
+		return vOut, fnOut
 	}
 	return mock.PayloadFunc()
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coder/websocket"
 	"github.com/jellydator/purse/util/testutil"
 	"github.com/jellydator/purse/util/timeutil"
 	"github.com/jellydator/wetsocks/wsclient"
@@ -15,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"nhooyr.io/websocket"
 )
 
 func TestMain(m *testing.M) {

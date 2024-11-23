@@ -10,7 +10,7 @@ import (
 
 // Ensure, that GroupedSubFormatterMock does implement GroupedSubFormatter.
 // If this is not the case, regenerate this file with moq.
-var _ GroupedSubFormatter[comparable] = &GroupedSubFormatterMock[comparable]{}
+var _ GroupedSubFormatter[any] = &GroupedSubFormatterMock[any]{}
 
 // GroupedSubFormatterMock is a mock implementation of GroupedSubFormatter.
 //
@@ -190,9 +190,9 @@ func (mock *GroupedSubFormatterMock[K]) SubMessage(topic string, keys []K) any {
 	mock.lockSubMessage.Unlock()
 	if mock.SubMessageFunc == nil {
 		var (
-			ifaceValOut any
+			vOut any
 		)
-		return ifaceValOut
+		return vOut
 	}
 	return mock.SubMessageFunc(topic, keys)
 }
@@ -229,9 +229,9 @@ func (mock *GroupedSubFormatterMock[K]) UnsubMessage(topic string, keys []K) any
 	mock.lockUnsubMessage.Unlock()
 	if mock.UnsubMessageFunc == nil {
 		var (
-			ifaceValOut any
+			vOut any
 		)
-		return ifaceValOut
+		return vOut
 	}
 	return mock.UnsubMessageFunc(topic, keys)
 }

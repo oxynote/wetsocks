@@ -9,11 +9,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/coder/websocket"
 	"github.com/jellydator/purse/util/ctxutil"
 	"github.com/jellydator/purse/util/logutil"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/slices"
-	"nhooyr.io/websocket"
 )
 
 var errInvalidTopicFormat = errors.New("invalid topic format")
@@ -63,7 +63,7 @@ func IsClosure(err error, skipCodes ...websocket.StatusCode) bool {
 		return true
 	}
 
-	// NOTE: This is a workaround for a bug in nhooyr/websocket. It seems
+	// NOTE: This is a workaround for a bug in coder/websocket. It seems
 	// like io.EOF error never gets wrapped, so we need to perform a
 	// string check.
 	return ctxutil.IsInterrupted(err) || errors.Is(err, net.ErrClosed) || strings.Contains(err.Error(), io.EOF.Error())

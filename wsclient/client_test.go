@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/coder/websocket"
 	"github.com/jellydator/purse/http/httpclient"
 	"github.com/jellydator/purse/util/testutil"
 	"github.com/jellydator/xync"
@@ -19,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"nhooyr.io/websocket"
 )
 
 func TestMain(m *testing.M) {
