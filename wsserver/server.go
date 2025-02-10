@@ -340,9 +340,7 @@ func (c *conn) publish(ctx context.Context, data func() ([]byte, error)) {
 
 	select {
 	case <-c.safeContext().Done():
-		c.log.Info().Msg("cannot write to a closed websocket connection")
 	case <-ctx.Done():
-		c.log.Info().Msg("cannot write to a closed context")
 	case c.writeCh <- bb:
 	}
 }
