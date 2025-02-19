@@ -8,6 +8,7 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/coder/websocket"
 	"github.com/jellydator/purse/util/ctxutil"
@@ -66,7 +67,10 @@ func IsClosure(err error, skipCodes ...websocket.StatusCode) bool {
 	// NOTE: This is a workaround for a bug in coder/websocket. It seems
 	// like io.EOF error never gets wrapped, so we need to perform a
 	// string check.
-	return ctxutil.IsInterrupted(err) || errors.Is(err, net.ErrClosed) || strings.Contains(err.Error(), io.EOF.Error())
+	return ctxutil.IsInterrupted(err) ||
+		errors.Is(err, syscall.ECONNRESET) ||
+		errors.Is(err, net.ErrClosed) ||
+		strings.Contains(err.Error(), io.EOF.Error())
 }
 
 // Topic represents a parsed WebSocket topic.

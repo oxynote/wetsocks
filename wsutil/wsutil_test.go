@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"regexp"
+	"syscall"
 	"testing"
 
 	"github.com/coder/websocket"
@@ -96,6 +97,7 @@ func Test_IsClosure(t *testing.T) {
 		Code: websocket.StatusBadGateway,
 	}, websocket.StatusBadGateway))
 	assert.True(t, IsClosure(context.Canceled))
+	assert.True(t, IsClosure(syscall.ECONNRESET))
 	assert.True(t, IsClosure(io.EOF))
 }
 
