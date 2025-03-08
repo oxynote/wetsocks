@@ -11,6 +11,7 @@ import (
 	"github.com/jellydator/purse/util/logutil"
 	"github.com/jellydator/purse/util/timeutil"
 	"github.com/jellydator/wetsocks/wsclient"
+	"github.com/jellydator/xync"
 	"github.com/rs/zerolog"
 )
 
@@ -25,6 +26,10 @@ type Client struct {
 
 	procMu sync.Mutex
 	proc   *timeutil.PeriodicExec
+
+	supv      *xync.Supervisor
+	reconnMu  sync.RWMutex
+	reconnFns []func(context.Context)
 }
 
 // ClientOptions contains a WebSocket client's options.
@@ -74,6 +79,9 @@ func NewClient(
 		metrics: metrics,
 		keeper:  keeper,
 		ws:      wsclient.New(logger, metrics, opts.Options),
+		supv: xync.NewSupervisor(
+			xync.WithSupervisorRecovery(opts.RecoveryFunc),
+		),
 	}
 	s.proc = timeutil.NewPeriodicExec(
 		opts.CheckAfter,
@@ -101,59 +109,74 @@ func NewClient(
 }
 
 // Close stops all the client-related processes.
-func (s *Client) Close() {
-	s.proc.Stop()
-	s.ws.Close()
+func (c *Client) Close() {
+	c.proc.Stop()
+	c.ws.Close()
+	c.supv.CloseAndWait()
 }
 
 // OnRead sets the provided function to be executed on a new incoming
 // JSON event. JSON data is not to be modified.
-func (s *Client) OnRead(fn func(context.Context, json.RawMessage)) {
-	s.ws.OnRead(fn)
+func (c *Client) OnRead(fn func(context.Context, json.RawMessage)) {
+	c.ws.OnRead(fn)
+}
+
+// OnReconnect sets the provided function to be executed on a
+// successful reconnection.
+func (c *Client) OnReconnect(fn func(context.Context)) {
+	c.reconnMu.Lock()
+	c.reconnFns = append(c.reconnFns, fn)
+	c.reconnMu.Unlock()
 }
 
 // process checks if the client's connection is not closed or any
 // of the subscriptions unsent.
-func (s *Client) process(ctx context.Context) {
-	if !s.procMu.TryLock() {
+func (c *Client) process(ctx context.Context) {
+	if !c.procMu.TryLock() {
 		// we need to ensure that only one process is running
 		// at a time, even if enough time passes for another
 		// one to start
 		return
 	}
 
-	defer s.procMu.Unlock()
+	defer c.procMu.Unlock()
 
-	ctx, cancel := ctxutil.MultiContext(ctx, s.opts.BaseContext())
+	ctx, cancel := ctxutil.MultiContext(ctx, c.opts.BaseContext())
 	defer cancel()
 
-	if !s.ws.IsOpen() {
-		s.keeper.ResetAll()
-		s.metrics.IncWsConnectionAttempts()
+	if !c.ws.IsOpen() {
+		c.keeper.ResetAll()
+		c.metrics.IncWsConnectionAttempts()
 
-		if err := s.ws.Open(ctx); err != nil {
-			l := logutil.NoContextLogger(s.log, err)
+		if err := c.ws.Open(ctx); err != nil {
+			l := logutil.NoContextLogger(c.log, err)
 			l.Warn().
 				Err(err).
 				Msg("cannot reopen the connection")
 
 			return
 		}
+
+		c.reconnMu.RLock()
+		for _, fn := range c.reconnFns {
+			c.supv.Go(fn)
+		}
+		c.reconnMu.RUnlock()
 	}
 
-	pp, cooldown := s.keeper.Payloads()
+	pp, cooldown := c.keeper.Payloads()
 	for i := range pp {
 		p, confirm := pp[i].Payload()
 		if p == nil {
 			continue
 		}
 
-		s.metrics.IncWsWrites()
+		c.metrics.IncWsWrites()
 
 		if confirm != nil {
-			res, err := s.ws.Send(ctx, p)
+			res, err := c.ws.Send(ctx, p)
 			if err != nil {
-				l := logutil.NoContextLogger(s.log, err)
+				l := logutil.NoContextLogger(c.log, err)
 				l.Warn().
 					Err(err).
 					Msg("cannot send a payload")
@@ -161,9 +184,9 @@ func (s *Client) process(ctx context.Context) {
 				confirm(res)
 			}
 		} else {
-			err := s.ws.Write(ctx, p)
+			err := c.ws.Write(ctx, p)
 			if err != nil {
-				l := logutil.NoContextLogger(s.log, err)
+				l := logutil.NoContextLogger(c.log, err)
 				l.Warn().
 					Err(err).
 					Msg("cannot write a payload")

@@ -12,6 +12,7 @@ import (
 	"github.com/jellydator/purse/util/testutil"
 	"github.com/jellydator/purse/util/timeutil"
 	"github.com/jellydator/wetsocks/wsclient"
+	"github.com/jellydator/xync"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -96,6 +97,7 @@ func Test_NewClient(t *testing.T) {
 	require.NotNil(t, s.ws)
 	s.ws.Close()
 	require.NotNil(t, s.proc)
+	require.NotNil(t, s.supv)
 	assert.False(t, baseCtxCalled)
 
 	s.proc.Stop()
@@ -148,6 +150,7 @@ func Test_NewClient(t *testing.T) {
 	assert.NotNil(t, s.metrics)
 	assert.NotNil(t, s.opts.RecoveryFunc)
 	assert.NotNil(t, s.opts.BaseContext)
+	require.NotNil(t, s.supv)
 	assert.Equal(t, time.Hour, s.opts.CheckAfter)
 	assert.NotZero(t, s.log)
 	assert.Same(t, keeper, s.keeper)
@@ -195,6 +198,7 @@ func Test_Client_Close(t *testing.T) {
 		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
+		supv: xync.NewSupervisor(xync.WithSupervisorRecovery(func(_ any) {})),
 	}
 	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Second, func(_ context.Context) {}, func(_ any) {})
 
@@ -258,6 +262,28 @@ func Test_Client_OnRead(t *testing.T) {
 	s.ws.Close()
 }
 
+func Test_Client_OnReconnect(t *testing.T) {
+	s := Client{
+		reconnFns: []func(context.Context){
+			func(_ context.Context) {},
+		},
+	}
+
+	var calls int
+
+	s.OnReconnect(func(_ context.Context) {
+		calls++
+	})
+
+	for i := 0; i < 10; i++ {
+		for _, fn := range s.reconnFns {
+			fn(context.Background())
+		}
+	}
+
+	assert.Equal(t, 10, calls)
+}
+
 func Test_Client_process(t *testing.T) {
 	var respErr bool
 
@@ -288,7 +314,10 @@ func Test_Client_process(t *testing.T) {
 	t.Cleanup(hs.Close)
 
 	// error returned by Open()
-	var baseCtxCalled bool
+	var (
+		baseCtxCalled bool
+		reconnCalled  bool
+	)
 
 	out, b := testutil.NewBuffer()
 	respErr = true
@@ -306,6 +335,12 @@ func Test_Client_process(t *testing.T) {
 		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
+		supv: xync.NewSupervisor(xync.WithSupervisorRecovery(func(_ any) {})),
+		reconnFns: []func(context.Context){
+			func(_ context.Context) {
+				reconnCalled = true
+			},
+		},
 	}
 	s.process(context.Background())
 
@@ -314,6 +349,7 @@ func Test_Client_process(t *testing.T) {
 	assert.NotContains(t, b.String(), "cannot send a payload")
 	assert.NotContains(t, b.String(), "cannot write a payload")
 	assert.True(t, baseCtxCalled)
+	assert.False(t, reconnCalled)
 	assert.Len(t, keeper.ResetAllCalls(), 1)
 	assert.Empty(t, keeper.PayloadsCalls())
 
@@ -336,6 +372,7 @@ func Test_Client_process(t *testing.T) {
 	assert.False(t, baseCtxCalled)
 	assert.Empty(t, keeper.ResetAllCalls())
 	assert.Empty(t, keeper.PayloadsCalls())
+	assert.False(t, reconnCalled)
 
 	b.Reset()
 
@@ -495,4 +532,7 @@ func Test_Client_process(t *testing.T) {
 	assert.True(t, confirmCalled)
 
 	s.ws.Close()
+	s.supv.Close()
+
+	assert.True(t, reconnCalled)
 }
