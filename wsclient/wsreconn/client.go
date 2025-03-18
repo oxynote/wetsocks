@@ -88,6 +88,7 @@ func NewClient(
 		time.Second,
 		s.process,
 		opts.RecoveryFunc,
+		false,
 	)
 
 	multiCtx, multiCancel := ctxutil.MultiContext(ctx, opts.BaseContext())

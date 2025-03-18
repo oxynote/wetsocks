@@ -105,7 +105,7 @@ func Test_NewClient(t *testing.T) {
 	ch := make(chan struct{})
 	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Millisecond, func(_ context.Context) {
 		ch <- struct{}{}
-	}, func(_ any) {})
+	}, func(_ any) {}, false)
 
 	go s.proc.Start()
 
@@ -163,7 +163,7 @@ func Test_NewClient(t *testing.T) {
 
 	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Millisecond, func(_ context.Context) {
 		ch <- struct{}{}
-	}, func(_ any) {})
+	}, func(_ any) {}, false)
 
 	go s.proc.Start()
 
@@ -200,7 +200,7 @@ func Test_Client_Close(t *testing.T) {
 		}),
 		supv: xync.NewSupervisor(xync.WithSupervisorRecovery(func(_ any) {})),
 	}
-	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Second, func(_ context.Context) {}, func(_ any) {})
+	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Second, func(_ context.Context) {}, func(_ any) {}, false)
 
 	go s.proc.Start()
 
