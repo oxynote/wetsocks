@@ -305,7 +305,7 @@ func (c *Client) startPinger(ctx context.Context) {
 		pingInterval = _defaultPingInterval
 	}
 
-	tc := time.NewTimer(pingInterval)
+	tc := time.NewTicker(pingInterval)
 	defer tc.Stop()
 
 	for {
