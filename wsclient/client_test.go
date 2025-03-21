@@ -23,7 +23,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(
+		m,
+		goleak.IgnoreTopFunction("github.com/coder/websocket.(*Conn).timeoutLoop"),
+	)
 }
 
 func Test_New(t *testing.T) {
@@ -181,9 +184,10 @@ func Test_Client_Open(t *testing.T) {
 			DialOptions: websocket.DialOptions{
 				HTTPClient: httpclient.New(0),
 			},
-			URL:       hs.URL,
-			ReadLimit: _defaultReadLimit,
-			Cron:      cron.New(),
+			URL:          hs.URL,
+			ReadLimit:    _defaultReadLimit,
+			Cron:         cron.New(),
+			PingInterval: time.Millisecond,
 		},
 		supv:    xync.NewSupervisor(),
 		metrics: &MetricsMock{},

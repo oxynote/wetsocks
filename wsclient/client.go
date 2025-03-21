@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -19,8 +20,9 @@ import (
 )
 
 const (
-	_defaultReadLimit        = 1 << 15 // approx 32kb
-	_defaultReqID     uint64 = 1
+	_defaultReadLimit           = 1 << 15 // approx 32kb
+	_defaultReqID        uint64 = 1
+	_defaultPingInterval        = 30 * time.Second
 )
 
 var (
@@ -66,6 +68,9 @@ type Options struct {
 	// a single message.
 	// The default is 32kb.
 	ReadLimit int64
+
+	// PingInterval specifies the interval between ping requests.
+	PingInterval time.Duration
 
 	// Cron specifies repeated tasks that should be executed alongside
 	// the WebSocket connection (e.g., manual ping/keep alive requests).
@@ -157,6 +162,14 @@ func (c *Client) Open(ctx context.Context) error {
 		// connection's (supv is closed only in Close(), whereas
 		// the connection is also closed in reset()).
 		c.startWriter(clientCtx)
+	})
+	c.supv.Go(func(_ context.Context) {
+		// we use the context that was created specifically
+		// for the connection because startPinger() handles its
+		// closing. Also, the lifetime of supv may be longer than the
+		// connection's (supv is closed only in Close(), whereas
+		// the connection is also closed in reset()).
+		c.startPinger(clientCtx)
 	})
 
 	if c.opts.Cron != nil {
@@ -266,6 +279,49 @@ func (c *Client) startWriter(ctx context.Context) {
 			// it by ourselves and sending the data via the
 			// connection.
 			err := conn.Write(ctx, websocket.MessageText, data)
+			if err != nil {
+				if wsutil.IsClosure(err) {
+					return
+				}
+
+				// NOCOV: errors unrelated to closure
+				// are hard to simulate here
+				wsutil.LogError(c.log, err, false)
+			}
+		}
+	}
+}
+
+// startPinger handles pinging to the active WebSocket connection.
+func (c *Client) startPinger(ctx context.Context) {
+	defer logutil.Recover(
+		c.log,
+		logutil.NewRecoveryPlan("cannot continue pinging to the active connection"),
+	)
+	defer c.reset()
+
+	pingInterval := c.opts.PingInterval
+	if pingInterval == 0 {
+		pingInterval = _defaultPingInterval
+	}
+
+	tc := time.NewTimer(pingInterval)
+	defer tc.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tc.C:
+			c.connMu.RLock()
+			conn := c.conn
+			c.connMu.RUnlock()
+
+			if conn == nil {
+				return
+			}
+
+			err := conn.Ping(ctx)
 			if err != nil {
 				if wsutil.IsClosure(err) {
 					return

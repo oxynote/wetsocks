@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/coder/websocket v1.8.12
+	github.com/coder/websocket v1.8.13
 	github.com/jellydator/purse v0.0.0-20250318195853-7083f35dcbda
 	github.com/jellydator/xync v0.0.0-20240601154136-0f038e166df4
 	github.com/robfig/cron/v3 v3.0.1
