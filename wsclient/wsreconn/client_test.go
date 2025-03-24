@@ -12,7 +12,6 @@ import (
 	"github.com/jellydator/purse/util/testutil"
 	"github.com/jellydator/purse/util/timeutil"
 	"github.com/jellydator/wetsocks/wsclient"
-	"github.com/jellydator/xync"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,7 +96,6 @@ func Test_NewClient(t *testing.T) {
 	require.NotNil(t, s.ws)
 	s.ws.Close()
 	require.NotNil(t, s.proc)
-	require.NotNil(t, s.supv)
 	assert.False(t, baseCtxCalled)
 
 	s.proc.Stop()
@@ -150,7 +148,6 @@ func Test_NewClient(t *testing.T) {
 	assert.NotNil(t, s.metrics)
 	assert.NotNil(t, s.opts.RecoveryFunc)
 	assert.NotNil(t, s.opts.BaseContext)
-	require.NotNil(t, s.supv)
 	assert.Equal(t, time.Hour, s.opts.CheckAfter)
 	assert.NotZero(t, s.log)
 	assert.Same(t, keeper, s.keeper)
@@ -198,7 +195,6 @@ func Test_Client_Close(t *testing.T) {
 		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
-		supv: xync.NewSupervisor(xync.WithSupervisorRecovery(func(_ any) {})),
 	}
 	s.proc = timeutil.NewPeriodicExec(time.Hour, time.Second, func(_ context.Context) {}, func(_ any) {}, false)
 
@@ -335,7 +331,6 @@ func Test_Client_process(t *testing.T) {
 		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
-		supv: xync.NewSupervisor(xync.WithSupervisorRecovery(func(_ any) {})),
 		reconnFns: []func(context.Context){
 			func(_ context.Context) {
 				reconnCalled = true
@@ -532,7 +527,6 @@ func Test_Client_process(t *testing.T) {
 	assert.True(t, confirmCalled)
 
 	s.ws.Close()
-	s.supv.Close()
 
 	assert.True(t, reconnCalled)
 }

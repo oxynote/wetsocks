@@ -11,7 +11,6 @@ import (
 	"github.com/jellydator/purse/util/logutil"
 	"github.com/jellydator/purse/util/timeutil"
 	"github.com/jellydator/wetsocks/wsclient"
-	"github.com/jellydator/xync"
 	"github.com/rs/zerolog"
 )
 
@@ -27,7 +26,9 @@ type Client struct {
 	procMu sync.Mutex
 	proc   *timeutil.PeriodicExec
 
-	supv      *xync.Supervisor
+	// NOTE: Reconnection functions are not using
+	// supervisor as we expect that some logic might
+	// be critical to re-openning the connection.
 	reconnMu  sync.RWMutex
 	reconnFns []func(context.Context)
 }
@@ -79,9 +80,6 @@ func NewClient(
 		metrics: metrics,
 		keeper:  keeper,
 		ws:      wsclient.New(logger, metrics, opts.Options),
-		supv: xync.NewSupervisor(
-			xync.WithSupervisorRecovery(opts.RecoveryFunc),
-		),
 	}
 	s.proc = timeutil.NewPeriodicExec(
 		opts.CheckAfter,
@@ -113,7 +111,6 @@ func NewClient(
 func (c *Client) Close() {
 	c.proc.Stop()
 	c.ws.Close()
-	c.supv.CloseAndWait()
 }
 
 // OnRead sets the provided function to be executed on a new incoming
@@ -158,11 +155,9 @@ func (c *Client) process(ctx context.Context) {
 			return
 		}
 
-		c.reconnMu.RLock()
 		for _, fn := range c.reconnFns {
-			c.supv.Go(fn)
+			fn(ctx)
 		}
-		c.reconnMu.RUnlock()
 	}
 
 	pp, cooldown := c.keeper.Payloads()
