@@ -18,7 +18,7 @@ type GroupedSubKeeperStore[K comparable] struct {
 // expected or not.
 // The size parameter determines how many sub keepers should be created.
 func NewGroupedSubKeeperStore[K comparable](
-	metrics wsreconn.SubKeeperMetrics,
+	metricsFn func(connectionNumber int) wsreconn.SubKeeperMetrics,
 	fmt GroupedSubFormatter[K],
 	cooldown time.Duration,
 	manualConfirm bool,
@@ -31,7 +31,7 @@ func NewGroupedSubKeeperStore[K comparable](
 
 	for i := 0; i < size; i++ {
 		store.keepers[i] = wsreconn.NewGroupedSubKeeper(
-			metrics,
+			metricsFn(i+1),
 			fmt,
 			cooldown,
 			manualConfirm,

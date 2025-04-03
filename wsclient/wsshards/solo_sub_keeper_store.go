@@ -17,7 +17,7 @@ type SoloSubKeeperStore struct {
 // expected or not.
 // The size parameter determines how many sub keepers should be created.
 func NewSoloSubKeeperStore(
-	metrics wsreconn.SubKeeperMetrics,
+	metricsFn func(connectionNumber int) wsreconn.SubKeeperMetrics,
 	fmt wsreconn.SoloSubFormatter,
 	cooldown time.Duration,
 	manualConfirm bool,
@@ -29,7 +29,7 @@ func NewSoloSubKeeperStore(
 
 	for i := 0; i < size; i++ {
 		store.keepers[i] = wsreconn.NewSoloSubKeeper(
-			metrics,
+			metricsFn(i+1),
 			fmt,
 			cooldown,
 			manualConfirm,

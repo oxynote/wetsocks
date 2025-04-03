@@ -23,7 +23,7 @@ type Client struct {
 func NewClient(
 	ctx context.Context,
 	logger zerolog.Logger,
-	metrics wsreconn.ClientMetrics,
+	metricsFn func(connectionNumber int) wsreconn.ClientMetrics,
 	opts wsreconn.ClientOptions,
 	store SubKeeperStore,
 ) (*Client, error) {
@@ -33,7 +33,7 @@ func NewClient(
 		rc, err := wsreconn.NewClient(
 			ctx,
 			logger.With().Int("id", i+1).Logger(),
-			metrics,
+			metricsFn(i+1),
 			opts,
 			keeper,
 		)

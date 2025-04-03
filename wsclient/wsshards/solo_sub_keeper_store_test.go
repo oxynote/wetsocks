@@ -3,14 +3,23 @@ package wsshards
 import (
 	"testing"
 
-	wsReconnMock "github.com/jellydator/wetsocks/wsclient/wsreconn/_mock"
+	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	wsreconnMock "github.com/jellydator/wetsocks/wsclient/wsreconn/_mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_NewSoloSubKeeperStore(t *testing.T) {
-	fmt := &wsReconnMock.SoloSubFormatter{}
-	s := NewSoloSubKeeperStore(&wsReconnMock.SubKeeperMetrics{}, fmt, 1, true, 5)
+	fmt := &wsreconnMock.SoloSubFormatter{}
+	s := NewSoloSubKeeperStore(
+		func(_ int) wsreconn.SubKeeperMetrics {
+			return &wsreconnMock.SubKeeperMetrics{}
+		},
+		fmt,
+		1,
+		true,
+		5,
+	)
 	require.NotNil(t, s)
 	assert.Equal(t, 5, len(s.keepers))
 }

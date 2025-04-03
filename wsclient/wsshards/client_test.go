@@ -9,7 +9,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/jellydator/wetsocks/wsclient"
 	"github.com/jellydator/wetsocks/wsclient/wsreconn"
-	wsReconnMock "github.com/jellydator/wetsocks/wsclient/wsreconn/_mock"
+	wsreconnMock "github.com/jellydator/wetsocks/wsclient/wsreconn/_mock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func Test_NewClient(t *testing.T) {
 	store := &SubKeeperStoreMock{
 		SubKeepersFunc: func() []wsreconn.SubKeeper {
 			return []wsreconn.SubKeeper{
-				&wsReconnMock.SubKeeper{},
+				&wsreconnMock.SubKeeper{},
 			}
 		},
 	}
@@ -58,7 +58,9 @@ func Test_NewClient(t *testing.T) {
 	s, err := NewClient(
 		context.Background(),
 		zerolog.Nop(),
-		&wsReconnMock.ClientMetrics{},
+		func(_ int) wsreconn.ClientMetrics {
+			return &wsreconnMock.ClientMetrics{}
+		},
 		wsreconn.ClientOptions{
 			Options: wsclient.Options{
 				URL: hs.URL,
@@ -81,7 +83,9 @@ func Test_NewClient(t *testing.T) {
 	s, err = NewClient(
 		context.Background(),
 		zerolog.Nop(),
-		&wsReconnMock.ClientMetrics{},
+		func(_ int) wsreconn.ClientMetrics {
+			return &wsreconnMock.ClientMetrics{}
+		},
 		wsreconn.ClientOptions{
 			Options: wsclient.Options{
 				URL: hs.URL,
