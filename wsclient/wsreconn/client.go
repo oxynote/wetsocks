@@ -216,7 +216,7 @@ func (c *Client) process(ctx context.Context) {
 
 // SubKeeper is an interface that handles subscriptions and unsubscriptions.
 //
-//go:generate ../../scripts/codegen/mock -t internal SubKeeper
+//go:generate ../../scripts/codegen/mock -t both SubKeeper
 type SubKeeper interface {
 	// Payloads should return a slice of payloads that should
 	// be sent through a WebSocket connection and a duration

@@ -281,7 +281,7 @@ func (s *soloSub) Payload() (any, func(json.RawMessage)) {
 // SoloSubFormatter is an interface that handles solo subscribers' message
 // formatting.
 //
-//go:generate ../../scripts/codegen/mock -t internal SoloSubFormatter
+//go:generate ../../scripts/codegen/mock -t both SoloSubFormatter
 type SoloSubFormatter interface {
 	// SubMessage should return data that should be sent as a
 	// subscription message.
