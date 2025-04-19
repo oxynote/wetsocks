@@ -64,6 +64,10 @@ type Options struct {
 	// URL specifies the target URL of the dial request.
 	URL string
 
+	// URLFunc is a function that returns the target URL of the dial request.
+	// It is used when the URL is not known in advance.
+	URLFunc func() (string, error)
+
 	// ReadLimit specifies the max number of bytes to read for
 	// a single message.
 	// The default is 32kb.
@@ -133,7 +137,18 @@ func (c *Client) Open(ctx context.Context) error {
 		return ErrConnOpen
 	}
 
-	conn, _, err := websocket.Dial(ctx, c.opts.URL, &c.opts.DialOptions) //nolint:bodyclose // the body is closed automatically (docs)
+	url := c.opts.URL
+
+	if c.opts.URLFunc != nil {
+		var err error
+
+		url, err = c.opts.URLFunc()
+		if err != nil {
+			return err
+		}
+	}
+
+	conn, _, err := websocket.Dial(ctx, url, &c.opts.DialOptions) //nolint:bodyclose // the body is closed automatically (docs)
 	if err != nil {
 		return err
 	}

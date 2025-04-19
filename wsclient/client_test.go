@@ -238,7 +238,38 @@ func Test_Client_Open(t *testing.T) {
 
 	b.Reset()
 
+	// error - url function returns an error
+	retryMu.Lock()
+	retryIndex = 0
+	retryMu.Unlock()
+
+	callsMu.Lock()
+	calls = 0
+	callsMu.Unlock()
+
+	c.connMu.Lock()
+	c.conn = nil
+	c.connMu.Unlock()
+
+	c.opts.URL = ""
+	c.opts.URLFunc = func() (string, error) {
+		return "", assert.AnError
+	}
+
+	assert.Error(t, c.Open(context.Background()))
+	require.NoError(t, out.Flush())
+	assert.Empty(t, b.String())
+
+	c.supv.Wait()
+	callsMu.RLock()
+	assert.Zero(t, calls)
+	callsMu.RUnlock()
+
+	b.Reset()
+
 	// error - context cancelled
+	c.opts.URL = hs.URL
+
 	retryMu.Lock()
 	retryIndex = 0
 	retryMu.Unlock()
@@ -278,6 +309,11 @@ func Test_Client_Open(t *testing.T) {
 	c.connMu.Lock()
 	c.conn = nil
 	c.connMu.Unlock()
+
+	c.opts.URL = ""
+	c.opts.URLFunc = func() (string, error) {
+		return hs.URL, nil
+	}
 
 	require.NoError(t, c.Open(ctx))
 	c.connMu.RLock()
