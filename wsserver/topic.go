@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jellydator/purse/util/ctxutil"
-	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/lucidence/purse/util/ctxutil"
+	"github.com/lucidence/wetsocks/wsutil"
 )
 
 const (

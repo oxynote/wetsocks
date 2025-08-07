@@ -4,21 +4,20 @@ package wsreconn
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/jellydator/purse/util/ctxutil"
-	"github.com/jellydator/purse/util/logutil"
-	"github.com/jellydator/purse/util/timeutil"
-	"github.com/jellydator/wetsocks/wsclient"
-	"github.com/rs/zerolog"
+	"github.com/lucidence/purse/util/ctxutil"
+	"github.com/lucidence/purse/util/timeutil"
+	"github.com/lucidence/wetsocks/wsclient"
 )
 
 // Client wraps a WebSocket client and adds automatic
 // reconnection as well as resubscription logic.
 type Client struct {
 	opts    ClientOptions
-	log     zerolog.Logger
+	log     *slog.Logger
 	metrics ClientMetrics
 	keeper  SubKeeper
 	ws      *wsclient.Client
@@ -57,7 +56,7 @@ type ClientOptions struct {
 // produced by the function in the options.
 func NewClient(
 	ctx context.Context,
-	logger zerolog.Logger,
+	log *slog.Logger,
 	metrics ClientMetrics,
 	opts ClientOptions,
 	keeper SubKeeper,
@@ -76,10 +75,10 @@ func NewClient(
 
 	s := &Client{
 		opts:    opts,
-		log:     logger,
+		log:     log,
 		metrics: metrics,
 		keeper:  keeper,
-		ws:      wsclient.New(logger, metrics, opts.Options),
+		ws:      wsclient.New(log, metrics, opts.Options),
 	}
 	s.proc = timeutil.NewPeriodicExec(
 		opts.CheckAfter,
@@ -147,10 +146,7 @@ func (c *Client) process(ctx context.Context) {
 		c.metrics.IncWsConnectionAttempts()
 
 		if err := c.ws.Open(ctx); err != nil {
-			l := logutil.NoContextLogger(c.log, err)
-			l.Warn().
-				Err(err).
-				Msg("cannot reopen the connection")
+			c.log.Warn("cannot reopen the connection", "error", err)
 
 			return
 		}
@@ -172,20 +168,14 @@ func (c *Client) process(ctx context.Context) {
 		if confirm != nil {
 			res, err := c.ws.Send(ctx, p)
 			if err != nil {
-				l := logutil.NoContextLogger(c.log, err)
-				l.Warn().
-					Err(err).
-					Msg("cannot send a payload")
+				c.log.Warn("cannot send a payload", "error", err)
 			} else {
 				confirm(res)
 			}
 		} else {
 			err := c.ws.Write(ctx, p)
 			if err != nil {
-				l := logutil.NoContextLogger(c.log, err)
-				l.Warn().
-					Err(err).
-					Msg("cannot write a payload")
+				c.log.Warn("cannot write a payload", "error", err)
 			}
 		}
 

@@ -5,15 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"regexp"
 	"strings"
 	"syscall"
 
 	"github.com/coder/websocket"
-	"github.com/jellydator/purse/util/ctxutil"
-	"github.com/jellydator/purse/util/logutil"
-	"github.com/rs/zerolog"
+	"github.com/lucidence/purse/util/ctxutil"
+	"github.com/lucidence/purse/util/logutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -25,17 +25,17 @@ var _topicRe = regexp.MustCompile(`^([a-zA-Z0-9-]+~|)[a-zA-Z0-9-]+@(([a-zA-Z0-9-
 // LogError checks the provided websocket error and logs it accordingly.
 // If critical is set to true, then too big payload errors will be sent to
 // remote error tracking service.
-func LogError(logger zerolog.Logger, err error, critical bool) {
+func LogError(log *slog.Logger, err error, critical bool) {
 	if IsClosure(err, websocket.StatusMessageTooBig) {
 		return
 	}
 
 	if critical && IsStatus(err, websocket.StatusMessageTooBig) {
-		logutil.Critical(logger, err).Msg("websocket payload too big")
+		logutil.Critical(log, err).Error("websocket payload too big")
 		return
 	}
 
-	logger.Error().Err(err).Msg("websocket error")
+	log.With("error", err.Error()).Error("websocket error")
 }
 
 // IsStatus returns whether error's websocket status code is present
@@ -47,13 +47,7 @@ func IsStatus(err error, statusCodes ...websocket.StatusCode) bool {
 		return false
 	}
 
-	for _, s := range statusCodes {
-		if status == s {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(statusCodes, status)
 }
 
 // IsClosure checks whether the error indicates that the connection

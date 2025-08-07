@@ -5,9 +5,9 @@ package wsshards
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
-	"github.com/rs/zerolog"
+	"github.com/lucidence/wetsocks/wsclient/wsreconn"
 )
 
 // Client wraps multiple WebSocket clients and adds automatic
@@ -22,7 +22,7 @@ type Client struct {
 // sub keepers in the provided store.
 func NewClient(
 	ctx context.Context,
-	logger zerolog.Logger,
+	log *slog.Logger,
 	metricsFn func(connectionNumber int) wsreconn.ClientMetrics,
 	opts wsreconn.ClientOptions,
 	store SubKeeperStore,
@@ -32,7 +32,7 @@ func NewClient(
 	for i, keeper := range store.SubKeepers() {
 		rc, err := wsreconn.NewClient(
 			ctx,
-			logger.With().Int("id", i+1).Logger(),
+			log.With("id", i+1),
 			metricsFn(i+1),
 			opts,
 			keeper,

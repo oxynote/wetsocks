@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -12,11 +13,10 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/coder/websocket"
-	"github.com/jellydator/purse/http/httpclient"
-	"github.com/jellydator/purse/util/testutil"
 	"github.com/jellydator/xync"
+	"github.com/lucidence/purse/http/httpclient"
+	"github.com/lucidence/purse/util/testutil"
 	"github.com/robfig/cron/v3"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 
 func Test_New(t *testing.T) {
 	// default options
-	c := New(zerolog.Nop(), &MetricsMock{}, Options{})
+	c := New(slog.New(slog.DiscardHandler), &MetricsMock{}, Options{})
 	require.NotNil(t, c)
 	assert.Equal(t, int64(_defaultReadLimit), c.opts.ReadLimit)
 	assert.NotZero(t, c.log)
@@ -45,7 +45,7 @@ func Test_New(t *testing.T) {
 		ReadLimit:    1,
 		RecoveryFunc: func(_ any) {},
 	}
-	c = New(zerolog.Nop(), &MetricsMock{}, opts)
+	c = New(slog.New(slog.DiscardHandler), &MetricsMock{}, opts)
 	require.NotNil(t, c)
 	assert.Equal(t, opts.ReadLimit, c.opts.ReadLimit)
 	assert.NotZero(t, c.log)
@@ -86,6 +86,7 @@ func Test_Client_Open(t *testing.T) {
 
 	hs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		retryMu.Lock()
+
 		if retryIndex < 5 {
 			w.WriteHeader(http.StatusInternalServerError)
 
@@ -97,6 +98,7 @@ func Test_Client_Open(t *testing.T) {
 
 			return
 		}
+
 		retryMu.Unlock()
 
 		conn, err := websocket.Accept(w, r, nil)
@@ -110,6 +112,7 @@ func Test_Client_Open(t *testing.T) {
 		}
 
 		invalidMu.Lock()
+
 		if invalid {
 			conn.Write( //nolint:gosec,errcheck // error provides no meaningful info
 				context.Background(),
@@ -117,6 +120,7 @@ func Test_Client_Open(t *testing.T) {
 				[]byte(`{"hello":`),
 			)
 		}
+
 		invalidMu.Unlock()
 
 		conn.Write( //nolint:gosec,errcheck // error provides no meaningful info
@@ -148,6 +152,7 @@ func Test_Client_Open(t *testing.T) {
 		// we need to make sure that all events were read before
 		// allowing tests to continue
 		time.Sleep(time.Millisecond * 100)
+
 		resCh <- msg
 
 		// read is needed for the closing frame
@@ -179,7 +184,7 @@ func Test_Client_Open(t *testing.T) {
 	}
 	out, b := testutil.NewBuffer()
 	c := Client{
-		log: zerolog.New(out),
+		log: slog.New(slog.NewJSONHandler(out, nil)),
 		opts: Options{
 			DialOptions: websocket.DialOptions{
 				HTTPClient: httpclient.New(0),

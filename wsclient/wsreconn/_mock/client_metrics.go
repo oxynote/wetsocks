@@ -6,7 +6,7 @@ package mock
 import (
 	"sync"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	"github.com/lucidence/wetsocks/wsclient/wsreconn"
 )
 
 // Ensure, that ClientMetrics does implement wsreconn.ClientMetrics.

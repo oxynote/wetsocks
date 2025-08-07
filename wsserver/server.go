@@ -4,19 +4,19 @@ package wsserver
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/jellydator/purse/http/httpserver"
-	"github.com/jellydator/purse/util/errutil"
-	"github.com/jellydator/purse/util/logutil"
-	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/lucidence/purse/http/httpserver"
+	"github.com/lucidence/purse/util/errutil"
+	"github.com/lucidence/purse/util/logutil"
+	"github.com/lucidence/wetsocks/wsutil"
 	"github.com/rs/xid"
-	"github.com/rs/zerolog"
 )
 
 const _defaultReadLimit = 1 << 15 // approx 32kb
@@ -45,7 +45,7 @@ type ConnCloser interface {
 
 // Server handles server-side websocket connections.
 type Server struct {
-	log    zerolog.Logger
+	log    *slog.Logger
 	router *Router
 	opts   Options
 
@@ -80,7 +80,7 @@ type Options struct {
 // connections. Either a context or error should be returned. If an
 // error is returned, the connection won't be allowed to open.
 func New(
-	logger zerolog.Logger,
+	log *slog.Logger,
 	router *Router,
 	opts Options,
 ) *Server {
@@ -99,7 +99,7 @@ func New(
 	}
 
 	return &Server{
-		log:    logger,
+		log:    log,
 		router: router,
 		opts:   opts,
 		conns:  make(map[*conn]struct{}),
@@ -123,9 +123,8 @@ func (s *Server) CloseConn(filter func(context.Context) bool) {
 	supv := xync.NewSupervisor()
 
 	s.mu.RLock()
-	for c := range s.conns {
-		c := c
 
+	for c := range s.conns {
 		if !filter(c.safeContext()) {
 			continue
 		}
@@ -134,6 +133,7 @@ func (s *Server) CloseConn(filter func(context.Context) bool) {
 			s.closeConn(c)
 		})
 	}
+
 	s.mu.RUnlock()
 
 	supv.Wait()
@@ -206,9 +206,8 @@ func (s *Server) startReader(c *conn) {
 		if err != nil {
 			// NOCOV: response structure is already
 			// valid.
-			s.log.Error().
-				Err(err).
-				Msg("cannot encode a websocket response")
+			s.log.With("error", err.Error()).
+				Error("cannot encode a websocket response")
 
 			return
 		}
@@ -249,10 +248,10 @@ func (s *Server) startReader(c *conn) {
 			continue
 		}
 
-		switch {
-		case tpc.Descriptor == _descriptorSub:
+		switch tpc.Descriptor {
+		case _descriptorSub:
 			resp.Success = s.router.addTopicSub(tpc, c) == nil
-		case tpc.Descriptor == _descriptorUnsub:
+		case _descriptorUnsub:
 			s.router.removeTopicSub(tpc, c)
 
 			resp.Success = true
@@ -292,7 +291,7 @@ func (s *Server) startWriter(c *conn) {
 // conn wraps the real websocket connection and adds additional functionality
 // that gives better control over the wrapped connection.
 type conn struct {
-	log  zerolog.Logger
+	log  *slog.Logger
 	conn *websocket.Conn
 
 	ctxMu sync.RWMutex
@@ -305,13 +304,13 @@ type conn struct {
 // newConn creates a new connection wrapper.
 func newConn(
 	ctx context.Context,
-	logger zerolog.Logger,
+	log *slog.Logger,
 	c *websocket.Conn,
 ) *conn {
 	ctx, cancel := context.WithCancel(ctx)
 
 	return &conn{
-		log:     logger,
+		log:     log,
 		conn:    c,
 		ctx:     ctx,
 		stop:    cancel,
@@ -331,9 +330,8 @@ func (c *conn) safeContext() context.Context {
 func (c *conn) publish(ctx context.Context, data func() ([]byte, error)) {
 	bb, err := data()
 	if err != nil {
-		c.log.Error().
-			Err(err).
-			Msg("cannot encode websocket payload")
+		c.log.With("error", err.Error()).
+			Error("cannot encode websocket payload")
 
 		return
 	}

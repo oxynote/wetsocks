@@ -3,7 +3,7 @@ package wsshards
 import (
 	"time"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	"github.com/lucidence/wetsocks/wsclient/wsreconn"
 )
 
 // SoloSubKeeperStore holds sub keepers whose payloads are sent one by one.

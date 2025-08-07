@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/jellydator/wetsocks/wsserver"
+	"github.com/lucidence/wetsocks/wsserver"
 )
 
 // Ensure, that Topic does implement wsserver.Topic.

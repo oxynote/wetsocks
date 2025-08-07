@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	"github.com/lucidence/wetsocks/wsclient/wsreconn"
 )
 
 // Ensure, that groupedSubKeeperMock does implement groupedSubKeeper.

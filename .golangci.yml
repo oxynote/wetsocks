@@ -1,32 +1,22 @@
-run:
-  timeout: 10m
-
+version: "2"
 linters:
   enable:
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - typecheck
-    - unused
     - asasalint
     - asciicheck
     - bidichk
     - bodyclose
-    # - contextcheck # TODO: Need to overview the linter separately.
     - cyclop
     - depguard
     - dogsled
     - dupword
     - durationcheck
+    - err113
     - errchkjson
     - errname
     - errorlint
     - exhaustive
     - forbidigo
     - forcetypeassert
-    - gci
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -34,10 +24,6 @@ linters:
     - gocritic
     - gocyclo
     - godot
-    - err113
-    - gofmt
-    - gofumpt
-    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
@@ -61,16 +47,16 @@ linters:
     - revive
     - rowserrcheck
     - sqlclosecheck
-    - stylecheck
+    - staticcheck
     - tagliatelle
-    - usetesting
     - thelper
     - unconvert
     - unparam
     - usestdlibvars
+    - usetesting
     - wastedassign
     - whitespace
-    - wsl
+    - wsl_v5
   disable:
     - containedctx
     - decorder
@@ -89,162 +75,162 @@ linters:
     - tparallel
     - varnamelen
     - wrapcheck
-
-linters-settings:
-  govet:
-    shadow: true
-    enable-all: true
-    disable:
-      - fieldalignment
-  cyclop:
-    max-complexity: 25
-    skip-tests: true
-  depguard:
-    rules:
-      main:
-        deny:
-          - pkg: gotest.tools/assert
-          - pkg: github.com/bmizerany/assert
-  exhaustive:
-    default-signifies-exhaustive: true
-  gocognit:
-    max-complexity: 25
-  goconst:
-    ignore-tests: true
-    min-occurrences: 5
-    numbers: true
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-      - experimental
-      - opinionated
-    disabled-checks:
-      - hugeParam
-      - unnamedResult
-      - sloppyReassign
-  gocyclo:
-    max-complexity: 25
-  gofumpt:
-    extra-rules: true
-  nakedret:
-    max-func-lines: 20
-  nolintlint:
-    allow-leading-space: false
-  paralleltest:
-    ignore-missing: true
-  prealloc:
-    for-loops: true
-  promlinter:
-    strict: true
-  revive: # TODO: Need to overview the list separately.
-    enable-all-rules: true
-    rules:
-      - name: unchecked-type-assertion
-        disabled: true
-      - name: import-alias-naming
-        disabled: true
-      - name: unnecessary-stmt
-        disabled: true
-      - name: argument-limit
-        disabled: true
-      - name: function-result-limit
-        disabled: true
-      - name: cyclomatic
-        severity: warning
-        disabled: true
-      - name: line-length-limit
-        severity: warning
-        disabled: true
-      - name: cognitive-complexity
-        severity: warning
-        disabled: true
-      - name: confusing-naming
-        disabled: true
-      - name: unhandled-error
-        disabled: true
-      - name: max-public-structs
-        disabled: true
-      - name: function-length
-        disabled: true
-      - name: banned-characters
-        disabled: true
-      - name: file-header
-        disabled: true
-      - name: add-constant
-        disabled: true
-      - name: comment-spacings
-        disabled: true
-      - name: unused-receiver
-        disabled: true
-      - name: nested-structs
-        disabled: true
-      - name: flag-parameter
-        disabled: true
-      - name: empty-lines
-        disabled: true
-      - name: if-return
-        disabled: true
-  rowserrcheck:
-    packages:
-      - github.com/jmoiron/sqlx
-  tagliatelle:
-    case:
+  settings:
+    cyclop:
+      max-complexity: 25
+    depguard:
       rules:
-        json: snake
-  thelper:
-    test:
-      begin: false
-  whitespace:
-    multi-if: true
-  wsl:
-    force-err-cuddling: true
-
-issues:
-  exclude-use-default: false
-  exclude-rules:
-    - text: ^_.+
-      linters:
-        - gochecknoglobals
-
-    - path: _test.go
-      linters:
-        - forcetypeassert
-        - gochecknoinits
-        - maintidx
-        - usestdlibvars
-        - promlinter
-
-    - text: 'unnecessaryDefer: defer'
-      linters:
-        - gocritic
-
-    - text: do not define dynamic errors
-      linters:
-        - err113
-
-    - path: _test.go
-      text: G112
-      linters:
-        - gosec
-
-    - path: wsserver/server_test.go # false-positive
-      linters:
-        - promlinter
-
-    - text: block should not start with a whitespace # fix wsl and whitespace clash
-      linters:
-        - wsl
-
-    - text: should be annotated with the `db` # we don't use db specific structures
-      linters:
-        - musttag
-
-    - text: 'string `(true|false)` has'
-      linters:
-        - goconst
-
-    - source: "^//go:generate "
-      linters:
-        - dupword
+        main:
+          deny:
+            - pkg: gotest.tools/assert
+            - pkg: github.com/bmizerany/assert
+    exhaustive:
+      default-signifies-exhaustive: true
+    goconst:
+      min-occurrences: 5
+      numbers: true
+    gocritic:
+      disabled-checks:
+        - hugeParam
+        - unnamedResult
+        - sloppyReassign
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - experimental
+        - opinionated
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+    nakedret:
+      max-func-lines: 20
+    paralleltest:
+      ignore-missing: true
+    prealloc:
+      for-loops: true
+    promlinter:
+      strict: true
+    revive:
+      enable-all-rules: true
+      rules:
+        - name: unchecked-type-assertion
+          disabled: true
+        - name: import-alias-naming
+          disabled: true
+        - name: unnecessary-stmt
+          disabled: true
+        - name: argument-limit
+          disabled: true
+        - name: function-result-limit
+          disabled: true
+        - name: cyclomatic
+          severity: warning
+          disabled: true
+        - name: line-length-limit
+          severity: warning
+          disabled: true
+        - name: cognitive-complexity
+          severity: warning
+          disabled: true
+        - name: confusing-naming
+          disabled: true
+        - name: unhandled-error
+          disabled: true
+        - name: max-public-structs
+          disabled: true
+        - name: function-length
+          disabled: true
+        - name: banned-characters
+          disabled: true
+        - name: file-header
+          disabled: true
+        - name: add-constant
+          disabled: true
+        - name: comment-spacings
+          disabled: true
+        - name: unused-receiver
+          disabled: true
+        - name: nested-structs
+          disabled: true
+        - name: flag-parameter
+          disabled: true
+        - name: empty-lines
+          disabled: true
+        - name: if-return
+          disabled: true
+    rowserrcheck:
+      packages:
+        - github.com/jmoiron/sqlx
+    tagliatelle:
+      case:
+        rules:
+          json: snake
+    thelper:
+      test:
+        begin: false
+    whitespace:
+      multi-if: true
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - gochecknoglobals
+        text: ^_.+
+      - linters:
+          - forcetypeassert
+          - gochecknoinits
+          - maintidx
+          - promlinter
+          - usestdlibvars
+        path: _test.go
+      - linters:
+          - gocritic
+        text: 'unnecessaryDefer: defer'
+      - linters:
+          - err113
+        text: do not define dynamic errors
+      - linters:
+          - gosec
+        path: _test.go
+        text: G112
+      - linters:
+          - promlinter
+        path: wsserver/server_test.go
+      - linters:
+          - wsl_v5
+        text: missing whitespace
+        path: _test.go
+      - linters:
+          - musttag
+        text: should be annotated with the `db`
+      - linters:
+          - goconst
+        text: string `(true|false)` has
+      - linters:
+          - dupword
+        source: '^//go:generate '
+      - linters:
+          - cyclop
+          - goconst
+        path: (.+)_test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gofumpt:
+      extra-rules: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

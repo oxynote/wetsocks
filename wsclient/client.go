@@ -5,16 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/jellydator/purse/util/logutil"
-	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/lucidence/purse/util/logutil"
+	"github.com/lucidence/wetsocks/wsutil"
 	"github.com/robfig/cron/v3"
-	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -38,7 +38,7 @@ var (
 // Client handles an active client-side WebSocket connection.
 type Client struct {
 	opts    Options
-	log     zerolog.Logger
+	log     *slog.Logger
 	supv    *xync.Supervisor
 	metrics Metrics
 
@@ -89,7 +89,7 @@ type Options struct {
 }
 
 // New creates a fresh instance of the WebSocket client.
-func New(logger zerolog.Logger, metrics Metrics, opts Options) *Client {
+func New(log *slog.Logger, metrics Metrics, opts Options) *Client {
 	if opts.ReadLimit == 0 {
 		opts.ReadLimit = _defaultReadLimit
 	}
@@ -99,7 +99,7 @@ func New(logger zerolog.Logger, metrics Metrics, opts Options) *Client {
 	}
 
 	c := &Client{
-		log:  logger,
+		log:  log,
 		opts: opts,
 		supv: xync.NewSupervisor(
 			xync.WithSupervisorRecovery(opts.RecoveryFunc),
@@ -253,13 +253,13 @@ func (c *Client) startReader(ctx context.Context) {
 		}
 
 		c.readMu.RLock()
-		for _, fn := range c.readFns {
-			fn := fn
 
+		for _, fn := range c.readFns {
 			c.supv.Go(func(gctx context.Context) {
 				fn(gctx, data)
 			})
 		}
+
 		c.readMu.RUnlock()
 	}
 }

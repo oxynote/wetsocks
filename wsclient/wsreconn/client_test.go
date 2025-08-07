@@ -3,16 +3,16 @@ package wsreconn
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/jellydator/purse/util/testutil"
-	"github.com/jellydator/purse/util/timeutil"
-	"github.com/jellydator/wetsocks/wsclient"
-	"github.com/rs/zerolog"
+	"github.com/lucidence/purse/util/testutil"
+	"github.com/lucidence/purse/util/timeutil"
+	"github.com/lucidence/wetsocks/wsclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -52,7 +52,7 @@ func Test_NewClient(t *testing.T) {
 	keeper := &SubKeeperMock{}
 	s, err := NewClient(
 		context.Background(),
-		zerolog.Nop(),
+		slog.New(slog.DiscardHandler),
 		&ClientMetricsMock{},
 		ClientOptions{
 			Options: wsclient.Options{
@@ -75,7 +75,7 @@ func Test_NewClient(t *testing.T) {
 	keeper = &SubKeeperMock{}
 	s, err = NewClient(
 		context.Background(),
-		zerolog.Nop(),
+		slog.New(slog.DiscardHandler),
 		&ClientMetricsMock{},
 		ClientOptions{
 			Options: wsclient.Options{
@@ -127,7 +127,7 @@ func Test_NewClient(t *testing.T) {
 	keeper = &SubKeeperMock{}
 	s, err = NewClient(
 		context.Background(),
-		zerolog.Nop(),
+		slog.New(slog.DiscardHandler),
 		&ClientMetricsMock{},
 		ClientOptions{
 			Options: wsclient.Options{
@@ -192,7 +192,7 @@ func Test_Client_Close(t *testing.T) {
 	t.Cleanup(hs.Close)
 
 	s := Client{
-		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
+		ws: wsclient.New(slog.New(slog.DiscardHandler), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
 	}
@@ -222,7 +222,7 @@ func Test_Client_OnRead(t *testing.T) {
 	t.Cleanup(hs.Close)
 
 	s := Client{
-		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
+		ws: wsclient.New(slog.New(slog.DiscardHandler), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
 	}
@@ -325,10 +325,10 @@ func Test_Client_process(t *testing.T) {
 				return context.Background()
 			},
 		},
-		log:     zerolog.New(out),
+		log:     slog.New(slog.NewJSONHandler(out, nil)),
 		metrics: &ClientMetricsMock{},
 		keeper:  keeper,
-		ws: wsclient.New(zerolog.Nop(), &ClientMetricsMock{}, wsclient.Options{
+		ws: wsclient.New(slog.New(slog.DiscardHandler), &ClientMetricsMock{}, wsclient.Options{
 			URL: hs.URL,
 		}),
 		reconnFns: []func(context.Context){

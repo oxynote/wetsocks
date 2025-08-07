@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	"github.com/lucidence/wetsocks/wsclient/wsreconn"
 )
 
 // Ensure, that SoloSubFormatter does implement wsreconn.SoloSubFormatter.
