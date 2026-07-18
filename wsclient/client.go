@@ -5,16 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/davseby/wetsocks/wsutil"
-	"github.com/jellydator/purse/util/logutil"
 	"github.com/jellydator/xync"
 	"github.com/robfig/cron/v3"
-	"github.com/rs/zerolog"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -39,7 +38,7 @@ var (
 // Client handles an active client-side WebSocket connection.
 type Client struct {
 	opts    Options
-	log     zerolog.Logger
+	log     *slog.Logger
 	supv    *xync.Supervisor
 	metrics Metrics
 
@@ -109,7 +108,7 @@ type Options struct {
 }
 
 // New creates a fresh instance of the WebSocket client.
-func New(logger zerolog.Logger, metrics Metrics, opts Options) *Client {
+func New(logger *slog.Logger, metrics Metrics, opts Options) *Client {
 	if opts.ReadLimit == 0 {
 		opts.ReadLimit = _defaultReadLimit
 	}
@@ -237,10 +236,12 @@ func (c *Client) Open(ctx context.Context) error {
 // because the context's cancellation could shut down the whole websocket
 // connection: https://github.com/coder/websocket/issues/242#issuecomment-633182220
 func (c *Client) startReader(ctx context.Context) {
-	defer logutil.Recover(
-		c.log,
-		logutil.NewRecoveryPlan("cannot continue reading from the active connection"),
-	)
+	defer func() {
+		if r := recover(); r != nil {
+			c.log.Error("cannot continue reading from the active connection", "panic", r)
+			c.opts.RecoveryFunc(r)
+		}
+	}()
 	defer c.reset()
 
 	for {
@@ -344,10 +345,12 @@ func (c *Client) startSerialProcessor(ctx context.Context) {
 // because the context's cancellation could shut down the whole websocket
 // connection: https://github.com/coder/websocket/issues/242#issuecomment-633182220
 func (c *Client) startWriter(ctx context.Context) {
-	defer logutil.Recover(
-		c.log,
-		logutil.NewRecoveryPlan("cannot continue writing to the active connection"),
-	)
+	defer func() {
+		if r := recover(); r != nil {
+			c.log.Error("cannot continue writing to the active connection", "panic", r)
+			c.opts.RecoveryFunc(r)
+		}
+	}()
 	defer c.reset()
 
 	for {
@@ -384,10 +387,12 @@ func (c *Client) startWriter(ctx context.Context) {
 
 // startPinger handles pinging to the active WebSocket connection.
 func (c *Client) startPinger(ctx context.Context) {
-	defer logutil.Recover(
-		c.log,
-		logutil.NewRecoveryPlan("cannot continue pinging to the active connection"),
-	)
+	defer func() {
+		if r := recover(); r != nil {
+			c.log.Error("cannot continue pinging to the active connection", "panic", r)
+			c.opts.RecoveryFunc(r)
+		}
+	}()
 	defer c.reset()
 
 	pingInterval := c.opts.PingInterval

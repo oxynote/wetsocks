@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/davseby/purse/util/ctxutil"
 	"github.com/davseby/wetsocks/wsutil"
-	"github.com/jellydator/purse/util/ctxutil"
 	"github.com/jellydator/xync"
 )
 

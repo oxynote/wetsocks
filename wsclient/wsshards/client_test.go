@@ -2,6 +2,7 @@ package wsshards
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,7 +11,6 @@ import (
 	"github.com/davseby/wetsocks/wsclient"
 	"github.com/davseby/wetsocks/wsclient/wsreconn"
 	wsreconnMock "github.com/davseby/wetsocks/wsclient/wsreconn/_mock"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -57,7 +57,7 @@ func Test_NewClient(t *testing.T) {
 
 	s, err := NewClient(
 		context.Background(),
-		zerolog.Nop(),
+		slog.New(slog.DiscardHandler),
 		func(_ int) wsreconn.ClientMetrics {
 			return &wsreconnMock.ClientMetrics{}
 		},
@@ -82,7 +82,7 @@ func Test_NewClient(t *testing.T) {
 
 	s, err = NewClient(
 		context.Background(),
-		zerolog.Nop(),
+		slog.New(slog.DiscardHandler),
 		func(_ int) wsreconn.ClientMetrics {
 			return &wsreconnMock.ClientMetrics{}
 		},

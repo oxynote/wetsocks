@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -12,11 +13,10 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/coder/websocket"
-	"github.com/jellydator/purse/http/httpclient"
-	"github.com/jellydator/purse/util/testutil"
+	"github.com/davseby/purse/http/httpclient"
+	"github.com/davseby/purse/util/testutil"
 	"github.com/jellydator/xync"
 	"github.com/robfig/cron/v3"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 
 func Test_New(t *testing.T) {
 	// default options
-	c := New(zerolog.Nop(), &MetricsMock{}, Options{})
+	c := New(slog.New(slog.DiscardHandler), &MetricsMock{}, Options{})
 	require.NotNil(t, c)
 	assert.Equal(t, int64(_defaultReadLimit), c.opts.ReadLimit)
 	assert.NotZero(t, c.log)
@@ -49,7 +49,7 @@ func Test_New(t *testing.T) {
 		RecoveryFunc: func(_ any) {},
 		SerialReads:  true,
 	}
-	c = New(zerolog.Nop(), &MetricsMock{}, opts)
+	c = New(slog.New(slog.DiscardHandler), &MetricsMock{}, opts)
 	require.NotNil(t, c)
 	assert.Equal(t, opts.ReadLimit, c.opts.ReadLimit)
 	assert.NotZero(t, c.log)
@@ -185,7 +185,7 @@ func Test_Client_Open(t *testing.T) {
 	}
 	out, b := testutil.NewBuffer()
 	c := Client{
-		log: zerolog.New(out),
+		log: slog.New(slog.NewJSONHandler(out, nil)),
 		opts: Options{
 			DialOptions: websocket.DialOptions{
 				HTTPClient: httpclient.New(0),
@@ -590,7 +590,7 @@ func Test_Client_startSerialProcessor(t *testing.T) {
 		recovered int
 	)
 
-	c := New(zerolog.Nop(), &MetricsMock{}, Options{
+	c := New(slog.New(slog.DiscardHandler), &MetricsMock{}, Options{
 		SerialReads: true,
 		RecoveryFunc: func(_ any) {
 			mu.Lock()
@@ -677,7 +677,7 @@ func Test_Client_SerialReads(t *testing.T) {
 		seqs []int64
 	)
 
-	c := New(zerolog.Nop(), &MetricsMock{}, Options{
+	c := New(slog.New(slog.DiscardHandler), &MetricsMock{}, Options{
 		URL:         hs.URL,
 		SerialReads: true,
 	})

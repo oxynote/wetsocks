@@ -4,21 +4,21 @@ package wsreconn
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/davseby/purse/util/ctxutil"
+	"github.com/davseby/purse/util/timeutil"
 	"github.com/davseby/wetsocks/wsclient"
-	"github.com/jellydator/purse/util/ctxutil"
-	"github.com/jellydator/purse/util/logutil"
-	"github.com/jellydator/purse/util/timeutil"
-	"github.com/rs/zerolog"
 )
 
 // Client wraps a WebSocket client and adds automatic
 // reconnection as well as resubscription logic.
 type Client struct {
 	opts    ClientOptions
-	log     zerolog.Logger
+	log     *slog.Logger
 	metrics ClientMetrics
 	keeper  SubKeeper
 	ws      *wsclient.Client
@@ -57,7 +57,7 @@ type ClientOptions struct {
 // produced by the function in the options.
 func NewClient(
 	ctx context.Context,
-	logger zerolog.Logger,
+	logger *slog.Logger,
 	metrics ClientMetrics,
 	opts ClientOptions,
 	keeper SubKeeper,
@@ -147,10 +147,7 @@ func (c *Client) process(ctx context.Context) {
 		c.metrics.IncWsConnectionAttempts()
 
 		if err := c.ws.Open(ctx); err != nil {
-			l := logutil.NoContextLogger(c.log, err)
-			l.Warn().
-				Err(err).
-				Msg("cannot reopen the connection")
+			c.logWarn("cannot reopen the connection", err)
 
 			return
 		}
@@ -172,20 +169,14 @@ func (c *Client) process(ctx context.Context) {
 		if confirm != nil {
 			res, err := c.ws.Send(ctx, p)
 			if err != nil {
-				l := logutil.NoContextLogger(c.log, err)
-				l.Warn().
-					Err(err).
-					Msg("cannot send a payload")
+				c.logWarn("cannot send a payload", err)
 			} else {
 				confirm(res)
 			}
 		} else {
 			err := c.ws.Write(ctx, p)
 			if err != nil {
-				l := logutil.NoContextLogger(c.log, err)
-				l.Warn().
-					Err(err).
-					Msg("cannot write a payload")
+				c.logWarn("cannot write a payload", err)
 			}
 		}
 
@@ -212,6 +203,16 @@ func (c *Client) process(ctx context.Context) {
 		case <-t.C:
 		}
 	}
+}
+
+// logWarn logs the provided message and error at the warning level.
+// Context cancellation errors are skipped.
+func (c *Client) logWarn(msg string, err error) {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return
+	}
+
+	c.log.Warn(msg, "error", err)
 }
 
 // SubKeeper is an interface that handles subscriptions and unsubscriptions.

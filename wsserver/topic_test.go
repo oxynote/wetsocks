@@ -2,6 +2,7 @@ package wsserver
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"sync"
 	"testing"
@@ -10,7 +11,6 @@ import (
 	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/xync"
 	"github.com/rs/xid"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1955,7 +1955,7 @@ func Test_areTopicParamsEqual(t *testing.T) {
 
 func prepConn(ch chan []byte) *conn {
 	return &conn{
-		log:     zerolog.Nop(),
+		log:     slog.New(slog.DiscardHandler),
 		ctx:     context.WithValue(_connCtx, _wsCtxID, xid.New().String()),
 		writeCh: ch,
 	}

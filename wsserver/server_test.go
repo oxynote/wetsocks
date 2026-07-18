@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -11,10 +12,9 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/davseby/purse/util/testutil"
 	"github.com/davseby/wetsocks/wsutil"
-	"github.com/jellydator/purse/util/testutil"
 	"github.com/jellydator/xync"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 
 func Test_New(t *testing.T) {
 	s := New(
-		zerolog.Nop(),
+		slog.New(slog.DiscardHandler),
 		&Router{},
 		Options{},
 	)
@@ -49,7 +49,7 @@ func Test_New(t *testing.T) {
 		InsecureSkipVerify: true,
 	}
 	s = New(
-		zerolog.Nop(),
+		slog.New(slog.DiscardHandler),
 		&Router{},
 		Options{
 			AcceptOptions:        acceptOpts,
@@ -295,6 +295,7 @@ func Test_Server_closeConn(t *testing.T) {
 
 func Test_Server_ServeHTTP(t *testing.T) {
 	s := &Server{
+		log:    slog.New(slog.DiscardHandler),
 		conns:  make(map[*conn]struct{}),
 		router: &Router{},
 		opts: Options{
@@ -391,6 +392,7 @@ func Test_Server_startReader(t *testing.T) {
 	}))
 
 	c := &conn{
+		log:     slog.New(slog.DiscardHandler),
 		conn:    dial(t, hs.URL),
 		ctx:     context.Background(),
 		stop:    func() {},
@@ -407,6 +409,7 @@ func Test_Server_startReader(t *testing.T) {
 	})
 
 	s := Server{
+		log: slog.New(slog.DiscardHandler),
 		conns: map[*conn]struct{}{
 			c:  {},
 			{}: {},
@@ -457,6 +460,7 @@ func Test_Server_startReader(t *testing.T) {
 
 	// context timeout
 	c = &conn{
+		log:     slog.New(slog.DiscardHandler),
 		conn:    dial(t, hs.URL),
 		ctx:     context.Background(),
 		stop:    func() {},
@@ -502,6 +506,7 @@ func Test_Server_startReader(t *testing.T) {
 
 	// invalid topic
 	c = &conn{
+		log:     slog.New(slog.DiscardHandler),
 		conn:    dial(t, hs.URL),
 		ctx:     context.Background(),
 		stop:    func() {},
@@ -692,12 +697,14 @@ func Test_Server_startWriter(t *testing.T) {
 	wsConn := dial(t, hs.URL)
 	connCtx, connCancel := context.WithCancel(context.Background())
 	c := &conn{
+		log:     slog.New(slog.DiscardHandler),
 		conn:    wsConn,
 		ctx:     connCtx,
 		stop:    func() {},
 		writeCh: make(chan []byte),
 	}
 	s := Server{
+		log: slog.New(slog.DiscardHandler),
 		conns: map[*conn]struct{}{
 			c:  {},
 			{}: {},
@@ -747,7 +754,7 @@ func Test_Server_startWriter(t *testing.T) {
 }
 
 func Test_newConn(t *testing.T) {
-	c := newConn(context.Background(), zerolog.Nop(), &websocket.Conn{})
+	c := newConn(context.Background(), slog.New(slog.DiscardHandler), &websocket.Conn{})
 	require.NotNil(t, c)
 	assert.NotZero(t, c.log)
 	assert.NotNil(t, c.conn)
@@ -765,7 +772,7 @@ func Test_conn_publish(t *testing.T) {
 	out, b := testutil.NewBuffer()
 	connCtx, connCancel := context.WithCancel(context.Background())
 	c := conn{
-		log:     zerolog.New(out),
+		log:     slog.New(slog.NewJSONHandler(out, nil)),
 		ctx:     connCtx,
 		writeCh: make(chan []byte, 1),
 	}
@@ -775,7 +782,7 @@ func Test_conn_publish(t *testing.T) {
 		return nil, errors.New("test")
 	})
 	require.NoError(t, out.Flush())
-	assert.Contains(t, b.String(), `"message":"cannot encode websocket payload"`)
+	assert.Contains(t, b.String(), `"msg":"cannot encode websocket payload"`)
 	assert.Contains(t, b.String(), `"error":"test"`)
 	b.Reset()
 
@@ -789,7 +796,7 @@ func Test_conn_publish(t *testing.T) {
 	require.Len(t, c.writeCh, 1)
 	<-c.writeCh
 	require.NoError(t, out.Flush())
-	assert.NotContains(t, b.String(), `"message":"cannot encode websocket payload"`)
+	assert.NotContains(t, b.String(), `"msg":"cannot encode websocket payload"`)
 	assert.NotContains(t, b.String(), `"error":"test"`)
 	b.Reset()
 
@@ -806,7 +813,7 @@ func Test_conn_publish(t *testing.T) {
 	require.Len(t, c.writeCh, 1)
 	<-c.writeCh
 	require.NoError(t, out.Flush())
-	assert.NotContains(t, b.String(), `"message":"cannot encode websocket payload"`)
+	assert.NotContains(t, b.String(), `"msg":"cannot encode websocket payload"`)
 	assert.NotContains(t, b.String(), `"error":"test"`)
 	b.Reset()
 
@@ -817,7 +824,7 @@ func Test_conn_publish(t *testing.T) {
 	require.Len(t, c.writeCh, 1)
 	assert.Equal(t, `{"msg":"hello"}`, string(<-c.writeCh))
 	require.NoError(t, out.Flush())
-	assert.NotContains(t, b.String(), `"message":"cannot encode websocket payload"`)
+	assert.NotContains(t, b.String(), `"msg":"cannot encode websocket payload"`)
 	assert.NotContains(t, b.String(), `"error":"test"`)
 	b.Reset()
 }

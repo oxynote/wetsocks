@@ -6,13 +6,13 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"regexp"
 	"syscall"
 	"testing"
 
 	"github.com/coder/websocket"
-	"github.com/jellydator/purse/util/testutil"
-	"github.com/rs/zerolog"
+	"github.com/davseby/purse/util/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
@@ -40,18 +40,18 @@ func Test_LogError(t *testing.T) {
 			Err: websocket.CloseError{
 				Code: websocket.StatusMessageTooBig,
 			},
-			Message: `"message":"websocket error"`,
+			Message: `"msg":"websocket error"`,
 		},
 		"Status too big and critical": {
 			Err: websocket.CloseError{
 				Code: websocket.StatusMessageTooBig,
 			},
 			Critical: true,
-			Message:  `"message":"websocket payload too big"`,
+			Message:  `"msg":"websocket payload too big"`,
 		},
 		"Other error": {
 			Err:     assert.AnError,
-			Message: `"message":"websocket error"`,
+			Message: `"msg":"websocket error"`,
 		},
 	}
 
@@ -63,7 +63,7 @@ func Test_LogError(t *testing.T) {
 
 			var b bytes.Buffer
 			out := bufio.NewWriter(&b)
-			log := zerolog.New(out)
+			log := slog.New(slog.NewJSONHandler(out, nil))
 
 			LogError(log, c.Err, c.Critical)
 			require.NoError(t, out.Flush())

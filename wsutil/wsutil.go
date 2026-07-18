@@ -5,15 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"regexp"
 	"strings"
 	"syscall"
 
 	"github.com/coder/websocket"
-	"github.com/jellydator/purse/util/ctxutil"
-	"github.com/jellydator/purse/util/logutil"
-	"github.com/rs/zerolog"
+	"github.com/davseby/purse/util/ctxutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -23,19 +22,19 @@ var errInvalidTopicFormat = errors.New("invalid topic format")
 var _topicRe = regexp.MustCompile(`^([a-zA-Z0-9-]+~|)[a-zA-Z0-9-]+@(([a-zA-Z0-9-{}_]\.?))+[^.]$`) //nolint:gocritic // it suggests rewriting the regexp into something that wouldn't work.
 
 // LogError checks the provided websocket error and logs it accordingly.
-// If critical is set to true, then too big payload errors will be sent to
-// remote error tracking service.
-func LogError(logger zerolog.Logger, err error, critical bool) {
+// If critical is set to true, then too big payload errors will be logged
+// as well.
+func LogError(logger *slog.Logger, err error, critical bool) {
 	if IsClosure(err, websocket.StatusMessageTooBig) {
 		return
 	}
 
 	if critical && IsStatus(err, websocket.StatusMessageTooBig) {
-		logutil.Critical(logger, err).Msg("websocket payload too big")
+		logger.Error("websocket payload too big", "error", err)
 		return
 	}
 
-	logger.Error().Err(err).Msg("websocket error")
+	logger.Error("websocket error", "error", err)
 }
 
 // IsStatus returns whether error's websocket status code is present
