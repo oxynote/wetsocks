@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/coder/websocket"
-	"github.com/jellydator/wetsocks/wsclient"
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
-	wsreconnMock "github.com/jellydator/wetsocks/wsclient/wsreconn/_mock"
+	"github.com/davseby/wetsocks/wsclient"
+	"github.com/davseby/wetsocks/wsclient/wsreconn"
+	wsreconnMock "github.com/davseby/wetsocks/wsclient/wsreconn/_mock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

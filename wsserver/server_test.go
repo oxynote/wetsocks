@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/purse/util/testutil"
-	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"

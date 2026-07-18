@@ -19,6 +19,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 	"go.uber.org/goleak"
 )
 
@@ -40,10 +41,13 @@ func Test_New(t *testing.T) {
 	assert.Equal(t, _defaultReqID, c.req.nextID)
 	assert.NotNil(t, c.req.respFns)
 
+	assert.Nil(t, c.readCh)
+
 	// non-default options
 	opts := Options{
 		ReadLimit:    1,
 		RecoveryFunc: func(_ any) {},
+		SerialReads:  true,
 	}
 	c = New(zerolog.Nop(), &MetricsMock{}, opts)
 	require.NotNil(t, c)
@@ -53,6 +57,8 @@ func Test_New(t *testing.T) {
 	assert.NotNil(t, c.writeCh)
 	assert.Equal(t, _defaultReqID, c.req.nextID)
 	assert.NotNil(t, c.req.respFns)
+	assert.NotNil(t, c.readCh)
+	assert.Equal(t, _serialReadsBuffer, cap(c.readCh))
 }
 
 func Test_Client_IsOpen(t *testing.T) {
@@ -575,6 +581,132 @@ func Test_Client_OnRead(t *testing.T) {
 	c.OnRead(func(context.Context, json.RawMessage) {})
 	c.OnRead(func(context.Context, json.RawMessage) {})
 	assert.Len(t, c.readFns, 2)
+}
+
+func Test_Client_startSerialProcessor(t *testing.T) {
+	var (
+		mu        sync.Mutex
+		received  []string
+		recovered int
+	)
+
+	c := New(zerolog.Nop(), &MetricsMock{}, Options{
+		SerialReads: true,
+		RecoveryFunc: func(_ any) {
+			mu.Lock()
+			recovered++
+			mu.Unlock()
+		},
+	})
+	c.OnRead(func(_ context.Context, d json.RawMessage) {
+		if string(d) == `"boom"` {
+			panic("boom")
+		}
+
+		mu.Lock()
+		received = append(received, string(d))
+		mu.Unlock()
+	})
+
+	for i := range 100 {
+		c.readCh <- json.RawMessage(fmt.Sprintf("%d", i))
+	}
+
+	// a panicking event must not kill the processing of
+	// subsequent events
+	c.readCh <- json.RawMessage(`"boom"`)
+	c.readCh <- json.RawMessage(`"last"`)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+
+		c.startSerialProcessor(ctx)
+	}()
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+
+		return len(received) == 101
+	}, time.Second*5, time.Millisecond*10)
+
+	cancel()
+	<-done
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range 100 {
+		assert.Equal(t, fmt.Sprintf("%d", i), received[i])
+	}
+
+	assert.Equal(t, `"last"`, received[100])
+	assert.Equal(t, 1, recovered)
+}
+
+func Test_Client_SerialReads(t *testing.T) {
+	const total = 50
+
+	hs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			return
+		}
+
+		for i := range total {
+			err := conn.Write(
+				r.Context(),
+				websocket.MessageText,
+				[]byte(fmt.Sprintf(`{"seq":%d}`, i)),
+			)
+			if err != nil {
+				return
+			}
+		}
+
+		conn.Read(context.Background()) //nolint:gosec,errcheck // error provides no meaningful info
+	}))
+	t.Cleanup(hs.Close)
+
+	var (
+		mu   sync.Mutex
+		seqs []int64
+	)
+
+	c := New(zerolog.Nop(), &MetricsMock{}, Options{
+		URL:         hs.URL,
+		SerialReads: true,
+	})
+	c.OnRead(func(_ context.Context, d json.RawMessage) {
+		// the sleep amplifies reordering that would occur if the
+		// events were processed concurrently
+		time.Sleep(time.Millisecond)
+
+		mu.Lock()
+		seqs = append(seqs, gjson.GetBytes(d, "seq").Int())
+		mu.Unlock()
+	})
+
+	require.NoError(t, c.Open(context.Background()))
+	t.Cleanup(c.Close)
+
+	require.Eventually(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+
+		return len(seqs) == total
+	}, time.Second*5, time.Millisecond*10)
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range seqs {
+		assert.Equal(t, int64(i), seqs[i])
+	}
 }
 
 func Test_Client_Write(t *testing.T) {

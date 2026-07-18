@@ -6,7 +6,7 @@ package mock
 import (
 	"sync"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	"github.com/davseby/wetsocks/wsclient/wsreconn"
 )
 
 // Ensure, that SubKeeperMetrics does implement wsreconn.SubKeeperMetrics.

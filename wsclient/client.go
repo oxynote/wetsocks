@@ -10,8 +10,8 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/purse/util/logutil"
-	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/zerolog"
@@ -23,6 +23,7 @@ const (
 	_defaultReadLimit           = 1 << 15 // approx 32kb
 	_defaultReqID        uint64 = 1
 	_defaultPingInterval        = 30 * time.Second
+	_serialReadsBuffer          = 512
 )
 
 var (
@@ -49,6 +50,13 @@ type Client struct {
 	readMu  sync.RWMutex
 	readFns []func(context.Context, json.RawMessage)
 	writeCh chan json.RawMessage
+
+	// readCh buffers incoming events for serial processing.
+	// It is nil unless the SerialReads option is used.
+	readCh chan json.RawMessage
+
+	// serialOnce guards the serial processor start-up.
+	serialOnce sync.Once
 
 	req struct {
 		mu      sync.RWMutex
@@ -86,6 +94,18 @@ type Options struct {
 	// RecoveryFunc is used to handle panics.
 	// An empty func is used if it's set to nil.
 	RecoveryFunc func(any)
+
+	// SerialReads specifies whether the incoming events should be
+	// processed one at a time in their arrival order. When disabled,
+	// each incoming event is processed on a separate goroutine and
+	// no ordering guarantees are provided.
+	// Note that when the internal event buffer fills up (e.g., when
+	// the read functions cannot keep up with the event flow), reading
+	// from the connection is paused until there is space in the
+	// buffer again.
+	// Request responses (see the Send method) are always processed
+	// on separate goroutines.
+	SerialReads bool
 }
 
 // New creates a fresh instance of the WebSocket client.
@@ -109,6 +129,10 @@ func New(logger zerolog.Logger, metrics Metrics, opts Options) *Client {
 	}
 	c.req.nextID = _defaultReqID
 	c.req.respFns = make(map[uint64]func(json.RawMessage))
+
+	if opts.SerialReads {
+		c.readCh = make(chan json.RawMessage, _serialReadsBuffer)
+	}
 
 	return c
 }
@@ -161,6 +185,18 @@ func (c *Client) Open(ctx context.Context) error {
 	var clientCtx context.Context
 
 	clientCtx, c.stop = context.WithCancel(context.Background())
+
+	if c.readCh != nil {
+		c.serialOnce.Do(func() {
+			// the serial processor is started only once and uses
+			// the supervisor's context because its lifetime must
+			// match the client's and not the connection's: events
+			// that are still buffered when the connection drops
+			// have to be processed before the events of any
+			// subsequent connection.
+			c.supv.Go(c.startSerialProcessor)
+		})
+	}
 
 	c.supv.Go(func(_ context.Context) {
 		// we use the context that was created specifically
@@ -252,6 +288,16 @@ func (c *Client) startReader(ctx context.Context) {
 			}
 		}
 
+		if c.readCh != nil {
+			select {
+			case <-ctx.Done():
+				return
+			case c.readCh <- data:
+			}
+
+			continue
+		}
+
 		c.readMu.RLock()
 		for _, fn := range c.readFns {
 			fn := fn
@@ -261,6 +307,35 @@ func (c *Client) startReader(ctx context.Context) {
 			})
 		}
 		c.readMu.RUnlock()
+	}
+}
+
+// startSerialProcessor executes read functions on buffered incoming
+// events one event at a time, preserving the arrival order.
+func (c *Client) startSerialProcessor(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case data := <-c.readCh:
+			func() {
+				// panics are recovered per event so that a
+				// single faulty event wouldn't kill the
+				// processing of all subsequent ones.
+				defer func() {
+					if v := recover(); v != nil {
+						c.opts.RecoveryFunc(v)
+					}
+				}()
+
+				c.readMu.RLock()
+				defer c.readMu.RUnlock()
+
+				for _, fn := range c.readFns {
+					fn(ctx, data)
+				}
+			}()
+		}
 	}
 }
 

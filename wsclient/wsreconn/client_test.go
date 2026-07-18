@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/davseby/wetsocks/wsclient"
 	"github.com/jellydator/purse/util/testutil"
 	"github.com/jellydator/purse/util/timeutil"
-	"github.com/jellydator/wetsocks/wsclient"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

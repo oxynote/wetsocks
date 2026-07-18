@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	"github.com/davseby/wetsocks/wsclient/wsreconn"
 	"github.com/rs/zerolog"
 )
 

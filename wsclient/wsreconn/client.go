@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davseby/wetsocks/wsclient"
 	"github.com/jellydator/purse/util/ctxutil"
 	"github.com/jellydator/purse/util/logutil"
 	"github.com/jellydator/purse/util/timeutil"
-	"github.com/jellydator/wetsocks/wsclient"
 	"github.com/rs/zerolog"
 )
 

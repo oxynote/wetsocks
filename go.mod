@@ -1,4 +1,4 @@
-module github.com/jellydator/wetsocks
+module github.com/davseby/wetsocks
 
 go 1.23.0
 

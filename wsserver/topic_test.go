@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jellydator/wetsocks/wsutil"
+	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/xync"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog"

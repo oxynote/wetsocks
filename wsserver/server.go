@@ -10,10 +10,10 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/purse/http/httpserver"
 	"github.com/jellydator/purse/util/errutil"
 	"github.com/jellydator/purse/util/logutil"
-	"github.com/jellydator/wetsocks/wsutil"
 	"github.com/jellydator/xync"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog"

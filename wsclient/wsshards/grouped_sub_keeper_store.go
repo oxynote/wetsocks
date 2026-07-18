@@ -3,7 +3,7 @@ package wsshards
 import (
 	"time"
 
-	"github.com/jellydator/wetsocks/wsclient/wsreconn"
+	"github.com/davseby/wetsocks/wsclient/wsreconn"
 )
 
 // GroupedSubKeeperStore holds sub keepers whose payloads are sent in groups.
