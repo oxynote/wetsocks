@@ -166,18 +166,32 @@ func (c *Client) process(ctx context.Context) {
 
 		c.metrics.IncWsWrites()
 
+		var err error
+
 		if confirm != nil {
-			res, err := c.ws.Send(ctx, p)
+			var res json.RawMessage
+
+			res, err = c.ws.Send(ctx, p)
 			if err != nil {
 				c.logWarn("cannot send a payload", err)
 			} else {
 				confirm(res)
 			}
 		} else {
-			err := c.ws.Write(ctx, p)
+			err = c.ws.Write(ctx, p)
 			if err != nil {
 				c.logWarn("cannot write a payload", err)
 			}
+		}
+
+		if errors.Is(err, wsclient.ErrConnClosed) {
+			// the connection died mid-loop, so the remaining
+			// payloads cannot be delivered until it is reopened;
+			// a prompt re-check reopens it instead of waiting
+			// for the next periodic one
+			c.proc.Trigger()
+
+			return
 		}
 
 		if cooldown <= 0 || i == len(pp)-1 {

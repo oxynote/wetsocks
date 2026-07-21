@@ -526,6 +526,55 @@ func Test_Client_process(t *testing.T) {
 	assert.Len(t, payloadInvalidSend.PayloadCalls(), 1)
 	assert.True(t, confirmCalled)
 
+	b.Reset()
+
+	// connection closes in the middle of the payload loop
+	baseCtxCalled = false
+	payloadClosingWrite := &SubPayloaderMock{
+		PayloadFunc: func() (any, func(json.RawMessage)) {
+			s.ws.Close()
+
+			return map[string]string{
+				"hello": "test",
+			}, nil
+		},
+	}
+	payloadUnreachableSend := &SubPayloaderMock{
+		PayloadFunc: func() (any, func(json.RawMessage)) {
+			return map[string]string{
+				"hello": "test",
+			}, func(_ json.RawMessage) {}
+		},
+	}
+	keeper = &SubKeeperMock{
+		PayloadsFunc: func() ([]SubPayloader, time.Duration) {
+			return []SubPayloader{
+				payloadClosingWrite,
+				payloadUnreachableSend,
+			}, 0
+		},
+	}
+	s.keeper = keeper
+	s.proc = timeutil.NewPeriodicExec(
+		time.Hour,
+		time.Second,
+		func(_ context.Context) {},
+		func(_ any) {},
+		false,
+	)
+
+	s.process(context.Background())
+
+	require.NoError(t, out.Flush())
+	assert.NotContains(t, b.String(), "cannot reopen the connection")
+	assert.NotContains(t, b.String(), "cannot send a payload")
+	assert.Contains(t, b.String(), "cannot write a payload")
+	assert.True(t, baseCtxCalled)
+	assert.Empty(t, keeper.ResetAllCalls())
+	assert.Len(t, keeper.PayloadsCalls(), 1)
+	assert.Len(t, payloadClosingWrite.PayloadCalls(), 1)
+	assert.Empty(t, payloadUnreachableSend.PayloadCalls())
+
 	s.ws.Close()
 
 	assert.True(t, reconnCalled)
