@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/davseby/wetsocks/wsserver"
+	"github.com/oxynote/wetsocks/wsserver"
 )
 
 // Ensure, that Pool does implement wsserver.Pool.

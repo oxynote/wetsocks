@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davseby/purse/util/ctxutil"
-	"github.com/davseby/purse/util/timeutil"
-	"github.com/davseby/wetsocks/wsclient"
+	"github.com/oxynote/wetsocks/internal/ctxutil"
+	"github.com/oxynote/wetsocks/internal/timeutil"
+	"github.com/oxynote/wetsocks/wsclient"
 )
 
 // Client wraps a WebSocket client and adds automatic

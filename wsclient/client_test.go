@@ -13,9 +13,9 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/coder/websocket"
-	"github.com/davseby/purse/http/httpclient"
-	"github.com/davseby/purse/util/testutil"
 	"github.com/jellydator/xync"
+	"github.com/oxynote/wetsocks/internal/httpclient"
+	"github.com/oxynote/wetsocks/internal/testutil"
 	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

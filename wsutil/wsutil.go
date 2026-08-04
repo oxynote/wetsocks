@@ -12,7 +12,7 @@ import (
 	"syscall"
 
 	"github.com/coder/websocket"
-	"github.com/davseby/purse/util/ctxutil"
+	"github.com/oxynote/wetsocks/internal/ctxutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -46,13 +46,7 @@ func IsStatus(err error, statusCodes ...websocket.StatusCode) bool {
 		return false
 	}
 
-	for _, s := range statusCodes {
-		if status == s {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(statusCodes, status)
 }
 
 // IsClosure checks whether the error indicates that the connection

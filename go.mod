@@ -1,43 +1,28 @@
-module github.com/davseby/wetsocks
+module github.com/oxynote/wetsocks
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/coder/websocket v1.8.13
-	github.com/davseby/purse v0.0.0-20260718191212-948f1210fc52
+	github.com/coder/websocket v1.8.15
 	github.com/jellydator/xync v0.0.0-20240601154136-0f038e166df4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.6.0
-	github.com/stretchr/testify v1.10.0
-	github.com/tidwall/gjson v1.17.1
+	github.com/stretchr/testify v1.11.1
+	github.com/tidwall/gjson v1.19.0
 	github.com/tidwall/sjson v1.2.5
 	go.uber.org/goleak v1.3.0
-	golang.org/x/exp v0.0.0-20250215185904-eff6e970281f
+	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743
 )
 
 require (
-	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dchest/uniuri v1.2.0 // indirect
-	github.com/getsentry/sentry-go v0.31.1 // indirect
-	github.com/go-chi/chi/v5 v5.2.1 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/jarcoal/httpmock v1.3.1 // indirect
-	github.com/jellydator/validation v1.1.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
+	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/swithek/sessionup v1.4.1 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	github.com/rogpeppe/go-internal v1.8.0 // indirect
+	github.com/tidwall/match v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	xojoc.pw/useragent v0.0.0-20200116211053-1ec61d55e8fe // indirect
 )

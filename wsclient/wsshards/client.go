@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/davseby/wetsocks/wsclient/wsreconn"
+	"github.com/oxynote/wetsocks/wsclient/wsreconn"
 )
 
 // Client wraps multiple WebSocket clients and adds automatic

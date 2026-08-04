@@ -11,9 +11,9 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/davseby/purse/util/errutil"
-	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/oxynote/wetsocks/internal/errutil"
+	"github.com/oxynote/wetsocks/wsutil"
 	"github.com/rs/xid"
 )
 
@@ -196,8 +196,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // respondError sends the provided error to the client as a JSON response.
 func (s *Server) respondError(w http.ResponseWriter, err error) {
-	respErr := errutil.Detect(err, false)
-	statusCode := errutil.StatusCode(respErr, false)
+	respErr := errutil.Detect(err)
+	statusCode := errutil.StatusCode(respErr)
 
 	body, merr := json.Marshal(respErr)
 	if merr != nil {

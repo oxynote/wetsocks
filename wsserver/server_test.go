@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/davseby/purse/util/testutil"
-	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/oxynote/wetsocks/internal/testutil"
+	"github.com/oxynote/wetsocks/wsutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

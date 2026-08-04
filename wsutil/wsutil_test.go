@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/coder/websocket"
-	"github.com/davseby/purse/util/testutil"
+	"github.com/oxynote/wetsocks/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davseby/wetsocks/wsclient/wsreconn"
+	"github.com/oxynote/wetsocks/wsclient/wsreconn"
 )
 
 // Ensure, that soloSubKeeperMock does implement soloSubKeeper.

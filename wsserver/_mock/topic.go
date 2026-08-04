@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/davseby/wetsocks/wsserver"
+	"github.com/oxynote/wetsocks/wsserver"
 )
 
 // Ensure, that Topic does implement wsserver.Topic.

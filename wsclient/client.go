@@ -11,8 +11,8 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/oxynote/wetsocks/wsutil"
 	"github.com/robfig/cron/v3"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"

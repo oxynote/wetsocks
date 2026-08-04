@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/oxynote/wetsocks/wsutil"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

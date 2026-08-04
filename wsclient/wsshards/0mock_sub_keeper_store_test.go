@@ -6,7 +6,7 @@ package wsshards
 import (
 	"sync"
 
-	"github.com/davseby/wetsocks/wsclient/wsreconn"
+	"github.com/oxynote/wetsocks/wsclient/wsreconn"
 )
 
 // Ensure, that SubKeeperStoreMock does implement SubKeeperStore.

@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/coder/websocket"
-	"github.com/davseby/wetsocks/wsclient"
-	"github.com/davseby/wetsocks/wsclient/wsreconn"
-	wsreconnMock "github.com/davseby/wetsocks/wsclient/wsreconn/_mock"
+	"github.com/oxynote/wetsocks/wsclient"
+	"github.com/oxynote/wetsocks/wsclient/wsreconn"
+	wsreconnMock "github.com/oxynote/wetsocks/wsclient/wsreconn/_mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

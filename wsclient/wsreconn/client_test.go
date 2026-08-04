@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/davseby/purse/util/testutil"
-	"github.com/davseby/purse/util/timeutil"
-	"github.com/davseby/wetsocks/wsclient"
+	"github.com/oxynote/wetsocks/internal/testutil"
+	"github.com/oxynote/wetsocks/internal/timeutil"
+	"github.com/oxynote/wetsocks/wsclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"

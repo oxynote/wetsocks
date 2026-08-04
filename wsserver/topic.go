@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/davseby/purse/util/ctxutil"
-	"github.com/davseby/wetsocks/wsutil"
 	"github.com/jellydator/xync"
+	"github.com/oxynote/wetsocks/internal/ctxutil"
+	"github.com/oxynote/wetsocks/wsutil"
 )
 
 const (
