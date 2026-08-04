@@ -1,4 +1,6 @@
-WETSOCKS_TEST_MIN_COV ?= 97
+ifeq ($(strip $(WETSOCKS_TEST_MIN_COV)),)
+WETSOCKS_TEST_MIN_COV = 97
+endif
 
 .PHONY: test
 test:

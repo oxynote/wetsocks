@@ -124,6 +124,7 @@ func (p *PeriodicExec) Start() {
 // It blocks until Start exits.
 func (p *PeriodicExec) Stop() {
 	p.stopCh <- struct{}{}
+
 	p.supv.StopAndWait()
 }
 

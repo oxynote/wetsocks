@@ -391,6 +391,7 @@ func Test_Client_process(t *testing.T) {
 					"hello": "test",
 				}, func(d json.RawMessage) {
 					confirmCalled = true
+
 					assert.JSONEq(t,
 						`{"hello":"test","id":1}`,
 						string(d),
@@ -496,6 +497,7 @@ func Test_Client_process(t *testing.T) {
 					"hello": "test",
 				}, func(d json.RawMessage) {
 					confirmCalled = true
+
 					assert.JSONEq(t,
 						`{"hello":"test","id":3}`,
 						string(d),

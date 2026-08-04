@@ -56,11 +56,11 @@ func Test_LogError(t *testing.T) {
 	}
 
 	for cn, c := range cc {
-
 		t.Run(cn, func(t *testing.T) {
 			t.Parallel()
 
 			var b bytes.Buffer
+
 			out := bufio.NewWriter(&b)
 			log := slog.New(slog.NewJSONHandler(out, nil))
 
@@ -175,7 +175,6 @@ func Test_ParseTopic(t *testing.T) {
 	}
 
 	for cn, c := range cc {
-
 		t.Run(cn, func(t *testing.T) {
 			t.Parallel()
 

@@ -64,10 +64,12 @@ func Test_PeriodicExec_Start(t *testing.T) {
 	// normal exit
 	go func() {
 		p.Start()
+
 		finishCh <- struct{}{}
 	}()
 
 	<-resCh
+
 	p.stopCh <- struct{}{}
 
 	assert.Eventually(t, func() bool {
@@ -87,12 +89,14 @@ func Test_PeriodicExec_Start(t *testing.T) {
 
 	go func() {
 		p.Start()
+
 		finishCh <- struct{}{}
 	}()
 
 	p.triggerCh <- struct{}{}
 
 	<-resCh
+
 	p.stopCh <- struct{}{}
 
 	assert.Eventually(t, func() bool {
@@ -112,6 +116,7 @@ func Test_PeriodicExec_Start(t *testing.T) {
 
 	go func() {
 		p.Start()
+
 		finishCh <- struct{}{}
 	}()
 
@@ -120,6 +125,7 @@ func Test_PeriodicExec_Start(t *testing.T) {
 	<-resCh
 
 	time.Sleep(time.Millisecond * 100) // give some time for the cooldown to complete
+
 	p.stopCh <- struct{}{}
 
 	assert.Eventually(t, func() bool {

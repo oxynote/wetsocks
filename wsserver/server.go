@@ -129,8 +129,8 @@ func (s *Server) CloseConn(filter func(context.Context) bool) {
 	supv := xync.NewSupervisor()
 
 	s.mu.RLock()
-	for c := range s.conns {
 
+	for c := range s.conns {
 		if !filter(c.safeContext()) {
 			continue
 		}
@@ -139,6 +139,7 @@ func (s *Server) CloseConn(filter func(context.Context) bool) {
 			s.closeConn(c)
 		})
 	}
+
 	s.mu.RUnlock()
 
 	supv.Wait()

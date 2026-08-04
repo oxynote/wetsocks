@@ -56,7 +56,7 @@ linters:
     - usetesting
     - wastedassign
     - whitespace
-    - wsl
+    - wsl_v5
   disable:
     - containedctx
     - decorder
@@ -176,8 +176,16 @@ linters:
         begin: false
     whitespace:
       multi-if: true
-    wsl:
-      force-err-cuddling: true
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+      enable:
+        - err
+      disable:
+        # clashes with the whitespace linter on multi-line if
+        # statements, which it requires to be followed by a newline
+        - leading-whitespace
   exclusions:
     generated: lax
     rules:
@@ -204,9 +212,6 @@ linters:
       - linters:
           - promlinter
         path: wsserver/server_test.go
-      - linters:
-          - wsl
-        text: block should not start with a whitespace
       - linters:
           - musttag
         text: should be annotated with the `db`

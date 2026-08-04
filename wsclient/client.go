@@ -300,12 +300,13 @@ func (c *Client) startReader(ctx context.Context) {
 		}
 
 		c.readMu.RLock()
-		for _, fn := range c.readFns {
 
+		for _, fn := range c.readFns {
 			c.supv.Go(func(gctx context.Context) {
 				fn(gctx, data)
 			})
 		}
+
 		c.readMu.RUnlock()
 	}
 }

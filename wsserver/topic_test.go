@@ -608,6 +608,7 @@ func Test_topic_addSub(t *testing.T) {
 			assert.True(t, p2 == "p2" || p2 == "p222")
 
 			subCalls++
+
 			subWg.Done()
 		},
 	}
@@ -617,6 +618,7 @@ func Test_topic_addSub(t *testing.T) {
 			defer firstSubMu.Unlock()
 
 			firstSubCalls++
+
 			firstSubWg.Done()
 		},
 	}
@@ -737,6 +739,7 @@ func Test_topic_removeSub(t *testing.T) {
 			assert.True(t, p2 == "p2" || p2 == "p22")
 
 			unsubCalls++
+
 			unsubWg.Done()
 		},
 	}
@@ -746,6 +749,7 @@ func Test_topic_removeSub(t *testing.T) {
 			defer lastUnsubMu.Unlock()
 
 			lastUnsubCalls++
+
 			lastUnsubWg.Done()
 		},
 	}
@@ -887,6 +891,7 @@ func Test_topic_removeConn(t *testing.T) {
 			assert.True(t, p2 == "p2" || p2 == "p22")
 
 			unsubCalls++
+
 			unsubWg.Done()
 		},
 	}
@@ -896,6 +901,7 @@ func Test_topic_removeConn(t *testing.T) {
 			defer lastUnsubMu.Unlock()
 
 			lastUnsubCalls++
+
 			lastUnsubWg.Done()
 		},
 	}
@@ -1458,6 +1464,7 @@ func Test_topic_DropMany(t *testing.T) {
 			defer unsubMu.Unlock()
 
 			unsubCalls++
+
 			unsubWg.Done()
 		},
 		func(_ context.Context) {
@@ -1465,6 +1472,7 @@ func Test_topic_DropMany(t *testing.T) {
 			defer unsubMu.Unlock()
 
 			unsubCalls++
+
 			unsubWg.Done()
 		},
 	}
@@ -1474,6 +1482,7 @@ func Test_topic_DropMany(t *testing.T) {
 			defer lastUnsubMu.Unlock()
 
 			lastUnsubCalls++
+
 			lastUnsubWg.Done()
 		},
 		func(_ context.Context) {
@@ -1481,6 +1490,7 @@ func Test_topic_DropMany(t *testing.T) {
 			defer lastUnsubMu.Unlock()
 
 			lastUnsubCalls++
+
 			lastUnsubWg.Done()
 		},
 	}
@@ -1720,10 +1730,12 @@ func Test_topic_execSubFns(t *testing.T) {
 	tpc.events.sub.fns = []func(context.Context){
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called1 = true
 		},
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called2 = true
 		},
 	}
@@ -1751,10 +1763,12 @@ func Test_topic_execUnsubFns(t *testing.T) {
 	tpc.events.unsub.fns = []func(context.Context){
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called1 = true
 		},
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called2 = true
 		},
 	}
@@ -1782,10 +1796,12 @@ func Test_topic_execFirstSubFns(t *testing.T) {
 	tpc.events.firstSub.fns = []func(context.Context){
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called1 = true
 		},
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called2 = true
 		},
 	}
@@ -1813,10 +1829,12 @@ func Test_topic_execLastUnsubFns(t *testing.T) {
 	tpc.events.lastUnsub.fns = []func(context.Context){
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called1 = true
 		},
 		func(ctx context.Context) {
 			assert.NotNil(t, ctx)
+
 			called2 = true
 		},
 	}

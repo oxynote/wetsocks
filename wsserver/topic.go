@@ -433,7 +433,6 @@ func (t *topic) publish(
 	}
 
 	for sub, pp := range subs {
-
 		wg.Add(len(pp))
 
 		for _, params := range pp {
@@ -597,7 +596,6 @@ func (t *topic) execSubFns(ctx context.Context) {
 	defer t.events.sub.mu.Unlock()
 
 	for _, fn := range t.events.sub.fns {
-
 		t.supv.Go(func(gctx context.Context) {
 			mctx, cancel := ctxutil.MultiContext(ctx, gctx)
 			defer cancel()
@@ -623,7 +621,6 @@ func (t *topic) execUnsubFns(ctx context.Context) {
 	defer t.events.unsub.mu.Unlock()
 
 	for _, fn := range t.events.unsub.fns {
-
 		t.supv.Go(func(gctx context.Context) {
 			mctx, cancel := ctxutil.MultiContext(ctx, gctx)
 			defer cancel()
@@ -648,7 +645,6 @@ func (t *topic) execFirstSubFns() {
 	defer t.events.firstSub.mu.Unlock()
 
 	for _, fn := range t.events.firstSub.fns {
-
 		t.supv.Go(func(gctx context.Context) {
 			fn(gctx)
 		})
@@ -670,7 +666,6 @@ func (t *topic) execLastUnsubFns() {
 	defer t.events.lastUnsub.mu.Unlock()
 
 	for _, fn := range t.events.lastUnsub.fns {
-
 		t.supv.Go(func(gctx context.Context) {
 			fn(gctx)
 		})

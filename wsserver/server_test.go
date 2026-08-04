@@ -341,9 +341,11 @@ func Test_Server_ServeHTTP(t *testing.T) {
 	}, time.Second, time.Millisecond*250)
 
 	s.mu.RLock()
+
 	for conn := range s.conns {
 		assert.NotZero(t, conn.ctx.Value(_wsCtxID))
 	}
+
 	s.mu.RUnlock()
 
 	require.NoError(t, wsConn.Close(websocket.StatusNormalClosure, ""))
@@ -716,6 +718,7 @@ func Test_Server_startWriter(t *testing.T) {
 
 	// success
 	go s.startWriter(c)
+
 	c.writeCh <- []byte(`{"msg":"hello"}`)
 
 	assert.Eventually(t, func() bool {
@@ -741,6 +744,7 @@ func Test_Server_startWriter(t *testing.T) {
 
 	// conn closed
 	go s.startWriter(c)
+
 	c.writeCh <- []byte(`{"msg":"hello"}`)
 
 	assert.Never(t, func() bool {
@@ -802,6 +806,7 @@ func Test_conn_publish(t *testing.T) {
 
 	// pub ctx cancellation
 	c.writeCh <- nil
+
 	c.ctx = context.Background()
 
 	pubCtx, pubCancel := context.WithCancel(context.Background())

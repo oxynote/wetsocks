@@ -154,6 +154,7 @@ func Test_Client_Open(t *testing.T) {
 		// we need to make sure that all events were read before
 		// allowing tests to continue
 		time.Sleep(time.Millisecond * 100)
+
 		resCh <- msg
 
 		// read is needed for the closing frame
@@ -345,6 +346,7 @@ func Test_Client_Open(t *testing.T) {
 
 	c.connMu.Lock() // we need time to cancel ctx in the middle of startWriter()
 	c.writeCh <- json.RawMessage("{}")
+
 	c.stop()
 	c.stop = func() {
 		stopCh <- struct{}{}
@@ -487,7 +489,9 @@ func Test_Client_Open(t *testing.T) {
 	callsMu.Unlock()
 
 	c.startReader(context.Background())
+
 	c.writeCh <- json.RawMessage("{}")
+
 	c.startWriter(context.Background())
 
 	require.NoError(t, out.Flush())
@@ -608,6 +612,7 @@ func Test_Client_startSerialProcessor(t *testing.T) {
 		}
 
 		mu.Lock()
+
 		received = append(received, string(d))
 		mu.Unlock()
 	})
@@ -619,6 +624,7 @@ func Test_Client_startSerialProcessor(t *testing.T) {
 	// a panicking event must not kill the processing of
 	// subsequent events
 	c.readCh <- json.RawMessage(`"boom"`)
+
 	c.readCh <- json.RawMessage(`"last"`)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -691,6 +697,7 @@ func Test_Client_SerialReads(t *testing.T) {
 		time.Sleep(time.Millisecond)
 
 		mu.Lock()
+
 		seqs = append(seqs, gjson.GetBytes(d, "seq").Int())
 		mu.Unlock()
 	})
@@ -738,6 +745,7 @@ func Test_Client_Write(t *testing.T) {
 	// error - cancelled context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	c.writeCh <- json.RawMessage("-1")
 
 	assert.Equal(t, context.Canceled, c.Write(ctx, msg))
@@ -795,6 +803,7 @@ func Test_Client_Send(t *testing.T) {
 
 	// error - context cancellation in Write()
 	c.req.nextID = reqID
+
 	c.req.respFns = make(map[uint64]func(json.RawMessage))
 	c.writeCh <- json.RawMessage("-1")
 
