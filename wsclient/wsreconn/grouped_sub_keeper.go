@@ -137,7 +137,6 @@ func (g *GroupedSubKeeper[K]) execFns() {
 	defer g.fnsMu.RUnlock()
 
 	for _, fn := range g.fns {
-		fn := fn
 
 		g.supv.Go(func(gctx context.Context) {
 			fn(gctx)

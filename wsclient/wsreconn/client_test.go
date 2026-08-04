@@ -271,7 +271,7 @@ func Test_Client_OnReconnect(t *testing.T) {
 		calls++
 	})
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		for _, fn := range s.reconnFns {
 			fn(context.Background())
 		}

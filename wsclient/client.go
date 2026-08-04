@@ -301,7 +301,6 @@ func (c *Client) startReader(ctx context.Context) {
 
 		c.readMu.RLock()
 		for _, fn := range c.readFns {
-			fn := fn
 
 			c.supv.Go(func(gctx context.Context) {
 				fn(gctx, data)

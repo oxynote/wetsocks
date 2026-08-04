@@ -91,7 +91,6 @@ func (s *SoloSubKeeper) execFns() {
 	defer s.fnsMu.RUnlock()
 
 	for _, fn := range s.fns {
-		fn := fn
 
 		s.supv.Go(func(gctx context.Context) {
 			fn(gctx)

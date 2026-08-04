@@ -164,26 +164,7 @@ func (c *Client) process(ctx context.Context) {
 			continue
 		}
 
-		c.metrics.IncWsWrites()
-
-		var err error
-
-		if confirm != nil {
-			var res json.RawMessage
-
-			res, err = c.ws.Send(ctx, p)
-			if err != nil {
-				c.logWarn("cannot send a payload", err)
-			} else {
-				confirm(res)
-			}
-		} else {
-			err = c.ws.Write(ctx, p)
-			if err != nil {
-				c.logWarn("cannot write a payload", err)
-			}
-		}
-
+		err := c.sendPayload(ctx, p, confirm)
 		if errors.Is(err, wsclient.ErrConnClosed) {
 			// the connection died mid-loop, so the remaining
 			// payloads cannot be delivered until it is reopened;
@@ -198,25 +179,36 @@ func (c *Client) process(ctx context.Context) {
 			continue
 		}
 
-		t := time.NewTimer(cooldown)
-
-		select {
-		case <-ctx.Done():
-			if !t.Stop() {
-				select {
-				case <-t.C:
-					// NOCOV: since the timer is created
-					// and stopped inside this function,
-					// there is no way to stop it from
-					// the outside to trigger this case.
-				default:
-				}
-			}
-
+		if timeutil.Sleep(ctx, cooldown) {
 			return
-		case <-t.C:
 		}
 	}
+}
+
+// sendPayload delivers a single payload through the connection,
+// confirming it if required.
+func (c *Client) sendPayload(ctx context.Context, p any, confirm func(json.RawMessage)) error {
+	c.metrics.IncWsWrites()
+
+	if confirm == nil {
+		err := c.ws.Write(ctx, p)
+		if err != nil {
+			c.logWarn("cannot write a payload", err)
+		}
+
+		return err
+	}
+
+	res, err := c.ws.Send(ctx, p)
+	if err != nil {
+		c.logWarn("cannot send a payload", err)
+
+		return err
+	}
+
+	confirm(res)
+
+	return nil
 }
 
 // logWarn logs the provided message and error at the warning level.

@@ -56,7 +56,6 @@ func Test_LogError(t *testing.T) {
 	}
 
 	for cn, c := range cc {
-		c := c
 
 		t.Run(cn, func(t *testing.T) {
 			t.Parallel()
@@ -176,7 +175,6 @@ func Test_ParseTopic(t *testing.T) {
 	}
 
 	for cn, c := range cc {
-		c := c
 
 		t.Run(cn, func(t *testing.T) {
 			t.Parallel()

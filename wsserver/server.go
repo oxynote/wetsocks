@@ -130,7 +130,6 @@ func (s *Server) CloseConn(filter func(context.Context) bool) {
 
 	s.mu.RLock()
 	for c := range s.conns {
-		c := c
 
 		if !filter(c.safeContext()) {
 			continue
@@ -277,13 +276,15 @@ func (s *Server) startReader(c *conn) {
 			continue
 		}
 
-		switch {
-		case tpc.Descriptor == _descriptorSub:
+		// unknown descriptors are reported as unsuccessful
+		switch tpc.Descriptor {
+		case _descriptorSub:
 			resp.Success = s.router.addTopicSub(tpc, c) == nil
-		case tpc.Descriptor == _descriptorUnsub:
+		case _descriptorUnsub:
 			s.router.removeTopicSub(tpc, c)
 
 			resp.Success = true
+		default:
 		}
 
 		respond(resp)
@@ -338,7 +339,7 @@ func newConn(
 	logger *slog.Logger,
 	c *websocket.Conn,
 ) *conn {
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(ctx) //nolint:gosec // the cancel function is stored below and called on stop
 
 	return &conn{
 		log:     logger,

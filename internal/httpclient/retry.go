@@ -31,14 +31,14 @@ type RetryTransport struct {
 func (rt *RetryTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	ctx := r.Context()
 
-	strat, ok := ctx.Value(_retryKey).(backoff.BackOff)
+	strategy, ok := ctx.Value(_retryKey).(backoff.BackOff)
 	if !ok {
-		strat = backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 0)
+		strategy = backoff.WithMaxRetries(backoff.NewConstantBackOff(0), 0)
 	}
 
 	// we need to ensure that retrying is stopped when the context is
 	// cancelled
-	strat = backoff.WithContext(strat, ctx)
+	strategy = backoff.WithContext(strategy, ctx)
 
 	var resp *http.Response
 
@@ -60,7 +60,7 @@ func (rt *RetryTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 		return nil
 	}
 
-	if err := backoff.Retry(fn, strat); err != nil {
+	if err := backoff.Retry(fn, strategy); err != nil {
 		return nil, err
 	}
 

@@ -21,7 +21,7 @@ func AssertEqualError(t *testing.T, exp, err error) {
 	t.Helper()
 
 	if exp != nil {
-		if exp == assert.AnError { //nolint:goerr113,errorlint // direct check is needed
+		if exp == assert.AnError { //nolint:err113,errorlint // direct check is needed
 			assert.Error(t, err)
 			return
 		}

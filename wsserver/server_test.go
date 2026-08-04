@@ -305,7 +305,7 @@ func Test_Server_ServeHTTP(t *testing.T) {
 		},
 		supv: xync.NewSupervisor(),
 	}
-	req := httptest.NewRequest("GET", "http://test.com/", http.NoBody)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://test.com/", http.NoBody)
 	rec := httptest.NewRecorder()
 
 	// context error
@@ -316,7 +316,7 @@ func Test_Server_ServeHTTP(t *testing.T) {
 	s.opts.BaseContext = func(_ *http.Request) (context.Context, error) {
 		return context.Background(), nil
 	}
-	req = httptest.NewRequest("GET", "http://test.com/", http.NoBody)
+	req = httptest.NewRequestWithContext(context.Background(), http.MethodGet, "http://test.com/", http.NoBody)
 	rec = httptest.NewRecorder()
 
 	s.ServeHTTP(rec, req)

@@ -20,11 +20,9 @@ func Test_IsInterrupted(t *testing.T) {
 }
 
 func Test_MultiContext(t *testing.T) {
-	ctx1, cancel1 := context.WithCancel(context.Background())
-	defer cancel1()
+	ctx1 := t.Context()
 
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx2 := t.Context()
 
 	mctx, mcancel := MultiContext(ctx1, ctx2)
 
@@ -123,8 +121,7 @@ func Test_multiCtx_run(t *testing.T) {
 	ctx1, cancel1 := context.WithCancel(context.Background())
 	defer cancel1()
 
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx2 := t.Context()
 
 	mctx := multiCtx{
 		done: make(chan struct{}),

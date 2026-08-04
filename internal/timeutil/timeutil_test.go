@@ -152,3 +152,12 @@ func Test_PeriodicExec_Trigger(_ *testing.T) {
 	p.Trigger()
 	p.Trigger() // doesn't block
 }
+
+func Test_Sleep(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	assert.False(t, Sleep(ctx, time.Millisecond))
+
+	cancel()
+	assert.True(t, Sleep(ctx, time.Minute))
+}

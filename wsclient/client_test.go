@@ -546,8 +546,12 @@ func Test_Client_Close(t *testing.T) {
 	cancel()
 
 	c.conn = dial(t, hs.URL)
-	err := c.conn.Write(ctx, websocket.MessageText, []byte("{}"))
-	assert.ErrorIs(t, err, context.Canceled)
+
+	// the write may occasionally complete before the connection
+	// notices the cancelled context
+	if err := c.conn.Write(ctx, websocket.MessageText, []byte("{}")); err != nil {
+		assert.ErrorIs(t, err, context.Canceled)
+	}
 
 	c.Close()
 	assert.Nil(t, c.conn)
@@ -661,7 +665,7 @@ func Test_Client_SerialReads(t *testing.T) {
 			err := conn.Write(
 				r.Context(),
 				websocket.MessageText,
-				[]byte(fmt.Sprintf(`{"seq":%d}`, i)),
+				fmt.Appendf(nil, `{"seq":%d}`, i),
 			)
 			if err != nil {
 				return

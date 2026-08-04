@@ -20,13 +20,13 @@ jobs:
     name: Linting
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ~1.21
-
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Installing dependencies
         run: |
@@ -34,21 +34,21 @@ jobs:
             go mod download
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.64
+          version: v2.11
 
   test:
     name: Unit testing
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ~1.23
-
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Installing dependencies
         run: |

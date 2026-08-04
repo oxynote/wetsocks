@@ -29,7 +29,7 @@ func NewGroupedSubKeeperStore[K comparable](
 		fmt:     fmt,
 	}
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		store.keepers[i] = wsreconn.NewGroupedSubKeeper(
 			metricsFn(i+1),
 			fmt,

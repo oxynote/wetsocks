@@ -135,3 +135,18 @@ func (p *PeriodicExec) Trigger() {
 	default:
 	}
 }
+
+// Sleep is a convenience function which either sleeps for a given duration
+// or returns early due to cancelation of a context. The boolean value
+// specifies if the context was canceled.
+func Sleep(ctx context.Context, dur time.Duration) bool {
+	tc := time.NewTimer(dur)
+	defer tc.Stop()
+
+	select {
+	case <-ctx.Done():
+		return true
+	case <-tc.C:
+		return false
+	}
+}

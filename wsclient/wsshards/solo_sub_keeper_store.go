@@ -27,7 +27,7 @@ func NewSoloSubKeeperStore(
 		keepers: make([]soloSubKeeper, size),
 	}
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		store.keepers[i] = wsreconn.NewSoloSubKeeper(
 			metricsFn(i+1),
 			fmt,
