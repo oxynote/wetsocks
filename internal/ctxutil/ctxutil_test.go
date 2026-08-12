@@ -9,6 +9,10 @@ import (
 	"go.uber.org/goleak"
 )
 
+// testCtxKey is a dedicated context key type, as using a built-in type as a
+// key is discouraged (and reported by multiple linters).
+type testCtxKey string
+
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
@@ -90,15 +94,15 @@ func Test_multiCtx_Value(t *testing.T) {
 	rootCtx := context.Background()
 	mctx := multiCtx{
 		ctxs: []context.Context{
-			context.WithValue(rootCtx, "hello", "test1"), //nolint:revive,staticcheck // used for testing
-			context.WithValue(rootCtx, "hello", "300"),   //nolint:revive,staticcheck // used for testing
-			context.WithValue(rootCtx, "hey", "123"),     //nolint:revive,staticcheck // used for testing
+			context.WithValue(rootCtx, testCtxKey("hello"), "test1"),
+			context.WithValue(rootCtx, testCtxKey("hello"), "300"),
+			context.WithValue(rootCtx, testCtxKey("hey"), "123"),
 		},
 	}
 
-	assert.Equal(t, "test1", mctx.Value("hello"))
-	assert.Equal(t, "123", mctx.Value("hey"))
-	assert.Nil(t, mctx.Value("hey123"))
+	assert.Equal(t, "test1", mctx.Value(testCtxKey("hello")))
+	assert.Equal(t, "123", mctx.Value(testCtxKey("hey")))
+	assert.Nil(t, mctx.Value(testCtxKey("hey123")))
 }
 
 func Test_multiCtx_cancel(t *testing.T) {
