@@ -9,15 +9,15 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.6.0
 	github.com/stretchr/testify v1.12.1
-	github.com/tidwall/gjson v1.19.0
-	github.com/tidwall/sjson v1.2.5
+	github.com/tidwall/gjson v1.20.2
+	github.com/tidwall/sjson v1.2.9
 	go.uber.org/goleak v1.3.0
 	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743
 )
 
 require (
 	github.com/tidwall/match v1.2.0 // indirect
-	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/pretty v1.3.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 )
